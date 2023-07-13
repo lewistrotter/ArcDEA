@@ -16,8 +16,8 @@ It provides:
 * Internet connection.
 
 ## Installation
-1. Download the latest release zip file from [here](https://github.com/lewistrotter/ArcDEA/releases) and unzip it.
-2. Double click the ArcDEA.esriAddinX and install add-in.
+1. Download the latest release ArcDEA.esriAddinX from [here](https://github.com/lewistrotter/ArcDEA/releases).
+2. Double click th file to install add-in.
 3. Restart ArcGIS Pro.
 4. Access tools via new ArcDEA ribbon tab in ArcGIS Pro.
 
