@@ -1,43 +1,52 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
-<ArcGIS defaultAssembly="ArcDEA.dll"
-        defaultNamespace="ArcDEA"
-        xmlns="http://schemas.esri.com/DADF/Registry"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
-
+﻿<ArcGIS defaultAssembly="ArcDEA.dll" defaultNamespace="ArcDEA" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
   <AddInInfo id="{ee5428c7-5f18-46b0-a69b-e3ffcf872829}" version="0.1" desktopVersion="3.0.36057">
-    <Name>ArcDEA</Name>   
+    <Name>ArcDEA</Name>
     <Description>ArcDEA description</Description>
     <Image>Images\AddinDesktop32.png</Image>
-    <Author>Lewis</Author>
-    <Company>Acme</Company>
+    <Author>Lewis Trotter</Author>
+    <Company>Curtin University</Company>
     <Date>2/7/2023 10:27:43 PM</Date>
     <Subject>Framework</Subject>
-    <!-- Note subject can be one or more of these topics:
-                    Content, Framework, Editing, Geodatabase, Geometry, Geoprocessing, Layouts, Map Authoring, Map Exploration -->
   </AddInInfo>
-
   <modules>
-    <insertModule id="ArcDEA_Module" className="Module1" autoLoad="false" caption="Module1">
-      <!-- uncomment to have the control hosted on a separate tab-->
+    <insertModule id="ArcDEA_Module" className="Module1" autoLoad="false" caption="ArcDEA">
       <tabs>
-        <!--<tab id="ArcDEA_Tab1" caption="New Tab">
-          <group refID="ArcDEA_Group1"/>
-        </tab>-->
+        <tab id="ArcDEA_Tab1" caption="ArcDEA">
+          <group refID="ArcDEA_Group1" />
+          <group refID="ArcDEA_Group2" />
+          <group refID="ArcDEA_Group3" />
+        </tab>
       </tabs>
-              
       <groups>
-        <!-- comment this out if you have no controls on the Addin tab to avoid
-              an empty group-->
-        <group id="ArcDEA_Group1" caption="Group 1" appearsOnAddInTab="true">
-          <!-- host controls within groups -->
+        <group id="ArcDEA_Group1" caption="Fetch Data" appearsOnAddInTab="false">
+          <button refID="ArcDEA_FetchLandsatData" size="large" />
+          <button refID="ArcDEA_FetchSentinel2Data" size="large" />
+        </group>
+        <group id="ArcDEA_Group2" caption="Manage Data" appearsOnAddInTab="false">
+          <button refID="ArcDEA_ResampleData" size="large" />
+        </group>
+        <group id="ArcDEA_Group3" caption="Converters" appearsOnAddInTab="false">
+          <button refID="ArcDEA_ConverterNetCDFToRasters" size="large" />
+		  <button refID="ArcDEA_ConvertNetCDFToCloudRaster" size="large" />
         </group>
       </groups>
-      
       <controls>
-        <!-- add your controls here -->
-      </controls> 
-      
+        <button id="ArcDEA_FetchLandsatData" caption="Landsat Data" className="FetchLandsatData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Fetch Landsat Data">Fetch and download Landsat 5, 7, 8 and 9 data via DEA STAC endpoint.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_FetchSentinel2Data" caption="Sentinel 2 Data" className="FetchSentinel2Data" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Fetch Sentinel 2 Data">Fetch and download Sentinel 2A and 2B data via DEA STAC endpoint.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_ResampleData" caption="Resample Data" className="Resample Data" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Resample Data">Resample previously fetched data to higher or lower temporal resolutions.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_ConverterNetCDFToRasters" caption="NetCDF to Rasters" className="ConverterNetCDFToRasters" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Tooltip Heading">Convert a NetCDF to a folder of Rasters.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_ConvertNetCDFToCloudRaster" caption="NetCDF To Cloud Raster" className="ConvertNetCDFToCloudRaster" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Tooltip Heading">Convert a NetCDF to a Cloud Raster Format (CRF) file.<disabledText /></tooltip>
+        </button>
+      </controls>
     </insertModule>
   </modules>
 </ArcGIS>
