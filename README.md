@@ -11,15 +11,12 @@ It provides:
 ## Screenshot
 ![Screenshot of ArcDEA](ArcDEA/Screenshots/ArcDEA_alpha_screenshot.png?raw=true "Screenshot of ArcDEA")
 
-## Where to get it
-Find the latest release in the [releases](https://github.com/lewistrotter/ArcDEA/releases) section. 
-
 ## Requirements
 * ArcGIS Pro version 3.0 or above.
 * Internet connection.
 
 ## Installation
-1. Download the latest release zip file and unzip it.
+1. Download the latest release zip file from [here](https://github.com/lewistrotter/ArcDEA/releases) and unzip it.
 2. Double click the ArcDEA.esriAddinX and install add-in.
 3. Restart ArcGIS Pro.
 4. Access tools via new ArcDEA ribbon tab in ArcGIS Pro.
