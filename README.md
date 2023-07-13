@@ -9,4 +9,4 @@ It provides:
 * ArcGIS toolbox compatible with model builder
 
 ## Screenshot
-![Screenshot of ArcDEA](ArcDEA/Screenshots/ArcDEA_alpha.png?raw=true "Screenshot of ArcDEA")
+![Screenshot of ArcDEA](ArcDEA/Screenshots/ArcDEA_alpha_screenshot.png?raw=true "Screenshot of ArcDEA")
