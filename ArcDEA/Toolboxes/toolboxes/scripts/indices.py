@@ -1,49 +1,77 @@
 
-import numpy as np
+import xarray as xr
 
 
 def ndvi(
-        red: np.ndarray,
-        nir: np.ndarray
-) -> np.ndarray:
-    """
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
 
-    :param red:
-    :param nir:
-    :return:
-    """
+    # find correct band names
+    if collection == 'ls':
+        red = 'nbart_red'
+        nir = 'nbart_nir'
+    elif collection == 's2':
+        red = 'nbart_red'
+        nir = 'nbart_nir_1'
 
-    arr = (nir - red) / (nir + red)
+    # check bands exist
+    for band in [red, nir]:
+        if band not in ds:
+            raise ValueError(f'Band: {band} not in NetCDF.')
 
-    return arr
+    try:
+        # calc index, citation rouse (1973)
+        ds['ndvi'] = ((ds[nir] - ds[red]) /
+                      (ds[nir] + ds[red]))
+
+    except Exception as e:
+        raise e
+
+    return ds
 
 
+def ndwi(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+    # find correct band names
+    if collection == 'ls':
+        green = 'nbart_green'
+        nir = 'nbart_nir'
+    elif collection == 's2':
+        green = 'nbart_green'
+        nir = 'nbart_nir_1'
+
+    try:
+        # calc index, citation mcfeeters (1996)
+        ds['ndwi'] = ((ds[green] - ds[nir]) /
+                      (ds[green] + ds[nir]))
+
+    except Exception as e:
+        raise e
+
+    return ds
 
 
+def cmr(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
 
+    # find correct band names
+    if collection == 'ls':
+        swir_1 = 'nbart_swir_1'
+        swir_2 = 'nbart_swir_2'
+    elif collection == 's2':
+        swir_1 = 'nbart_swir_2'
+        swir_2 = 'nbart_swir_3'
 
-def calc_index_from_array(
-        arr: np.ndarray,
-        index: str
-) -> np.ndarray:
-    """
+    try:
+        # calc index, citation drury (1987)
+        ds['cmr'] = (ds[swir_1] / ds[swir_2])
 
-    :param arr:
-    :param index:
-    :return:
-    """
+    except Exception as e:
+        raise e
 
-    arr_idx = None
-
-    if index == 'NDVI':
-        red = arr[0].astype('float32')
-        nir = arr[1].astype('float32')
-        arr_idx = ndvi(red, nir)
-
-    elif index == 'SAVI':
-        ...
-
-    else:
-        raise NotImplemented
-
-    return arr_idx
+    return ds

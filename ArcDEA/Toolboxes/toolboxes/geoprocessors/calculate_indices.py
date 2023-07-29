@@ -8,6 +8,8 @@ def execute(
     import xarray as xr
     import arcpy
 
+    from scripts import indices
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -16,16 +18,18 @@ def execute(
     # uncomment these when not testing
     in_nc = parameters[0].valueAsText
     out_nc = parameters[1].valueAsText
-    in_frequency = parameters[2].value
-    in_aggregator = parameters[3].value
-    in_interpolate = parameters[4].value
+    in_type = parameters[2].valueAsText
+    in_index_vegetation = parameters[3].valueAsText
+    in_index_water = parameters[4].valueAsText
+    in_index_minerals = parameters[5].valueAsText
 
     # uncomment these when testing
     # in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_agg.nc'
-    # in_frequency = 'Monthly (Start)'
-    # in_aggregator = 'Mean'
-    # in_interpolate = True
+    # in_type = 'Vegetation'
+    # in_index_vegetation = 'NDVI: (Normalised Difference Vegetation Index)'
+    # in_index_water = 'NDWI: (Normalised Difference Water Index)'
+    # in_index_minerals = 'CMR: Clay Minerals Ratio'
 
     # endregion
 
@@ -54,10 +58,7 @@ def execute(
         return
 
     # check if dimensions correct
-    if 'time' not in ds:
-        arcpy.AddError('No time dimension found in NetCDF.')
-        return
-    elif 'x' not in ds or 'y' not in ds:
+    if 'x' not in ds or 'y' not in ds:
         arcpy.AddError('No x, y dimensions found in NetCDF.')
         return
 
@@ -65,6 +66,12 @@ def execute(
     nodata = ds.attrs.get('nodata')
     if nodata is None:
         arcpy.AddError('No nodata attribute in NetCDF.')
+        return
+
+    # check xr has collections attr
+    collections = ds.attrs.get('collections')
+    if collections is None:
+        arcpy.AddError('No collections attribute in NetCDF.')
         return
 
     # endregion
@@ -79,84 +86,65 @@ def execute(
     ds_band_attrs = ds[list(ds)[0]].attrs
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
+    # get collection
+    collection = ';'.join([c for c in ds.attrs.get('collections')])
+    if 'ls' in collections:
+        collection = 'ls'
+    elif 's2' in collection:
+        collection = 's2'
+    else:
+        arcpy.AddError('Could not find collection.')
+        return
+
     # convert nodata to null
     ds = ds.where(ds != nodata)
 
+    # extract original bands for later removal
+    raw_bands = list(ds.data_vars)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region RESAMPLE NETCDF TIMESERIES
+    # region CALCULATE INDEX
 
-    arcpy.SetProgressor('default', 'Resampling NetCDF temporal frequency...')
-
-    # create frequency map
-    # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html
-    freq_map = {
-        'Daily': 'D',
-        'Weekly': 'W',
-        'Monthly (Start)': 'MS',
-        'Monthly (End)': 'M',
-        'Semi-Monthly (Start)': 'SMS',
-        'Semi-Monthly (End)': 'SM',
-        'Quarterly (Start)': 'QS',
-        'Quarterly (End)': 'Q',
-        'Yearly (Start)': 'AS',
-        'Yearly (End)': 'A'
-    }
-
-    # extract freq based on user input, error if not found
-    freq = freq_map.get(in_frequency)
-    if freq is None:
-        arcpy.AddError('Could not find frequency.')
-        return
+    arcpy.SetProgressor('default', 'Calculating index...')
 
     try:
-        # perform resample
-        ds = ds.resample(time=freq)
+        if in_type == 'Vegetation':
+            if in_index_vegetation.startswith('NDVI:'):
+                ds = indices.ndvi(ds=ds, collection=collection)
+            # elif
+
+        elif in_type == 'Water':
+            if in_index_water.startswith('NDWI:'):
+                ds = indices.ndwi(ds=ds, collection=collection)
+            # elif
+
+        elif in_type == 'Minerals':
+            if in_index_minerals.startswith('CMR:'):
+                ds = indices.cmr(ds=ds, collection=collection)
+            # elif
 
     except Exception as e:
-        arcpy.AddError('Error occurred when resampling NetCDF. Check messages.')
+        arcpy.AddError('Error occurred when calculating index. Check messages.')
         arcpy.AddMessage(str(e))
         return
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region AGGREGATE NETCDF VALUES
+    # region REMOVE RAW NETCDF BANDS
 
-    arcpy.SetProgressor('default', 'Aggregating NetCDF values...')
+    arcpy.SetProgressor('default', 'Removing raw NetCDF bands...')
 
     try:
-        # apply user aggregator to resampled netcdf
-        if in_aggregator == 'Minimum':
-            ds = ds.min('time')
-        elif in_aggregator == 'Maximum':
-            ds = ds.max('time')
-        elif in_aggregator == 'Mean':
-            ds = ds.mean('time')
-        elif in_aggregator == 'Median':
-            ds = ds.median('time')
-        elif in_aggregator == 'Standard Deviation':
-            ds = ds.std('time')
-        else:
-            arcpy.AddError('Could not find aggregator.')
-            return
+        # remove all raw netcdf bands
+        ds = ds.drop_vars(raw_bands)
 
     except Exception as e:
-        arcpy.AddError('Error occurred when aggregating NetCDF. Check messages.')
+        arcpy.AddError('Error occurred when dropping raw bands. Check messages.')
         arcpy.AddMessage(str(e))
         return
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region INTERPOLATE NETCDF IF REQUESTED
-
-    arcpy.SetProgressor('default', 'Interpolating missing NetCDF values...')
-
-    # interpolate if user requested
-    if in_interpolate:
-        ds = ds.interpolate_na('time')
 
     # endregion
 

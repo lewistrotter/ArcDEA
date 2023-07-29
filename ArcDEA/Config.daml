@@ -15,6 +15,7 @@
           <group refID="ArcDEA_Group1" />
           <group refID="ArcDEA_Group2" />
           <group refID="ArcDEA_Group3" />
+		  <group refID="ArcDEA_Group4" />
         </tab>
       </tabs>
       <groups>
@@ -22,12 +23,15 @@
           <button refID="ArcDEA_FetchLandsatData" size="large" />
           <button refID="ArcDEA_FetchSentinel2Data" size="large" />
         </group>
-        <group id="ArcDEA_Group2" caption="Manage Data" appearsOnAddInTab="false">
+		<group id="ArcDEA_Group2" caption="Indices" appearsOnAddInTab="false">
+		  <button refID="ArcDEA_CalculateIndices" size="large" />
+		</group>
+        <group id="ArcDEA_Group3" caption="Manage Data" appearsOnAddInTab="false">
           <button refID="ArcDEA_ResampleData" size="large" />
         </group>
-        <group id="ArcDEA_Group3" caption="Converters" appearsOnAddInTab="false">
+        <group id="ArcDEA_Group4" caption="Converters" appearsOnAddInTab="false">
           <button refID="ArcDEA_ConverterNetCDFToRasters" size="large" />
-		  <button refID="ArcDEA_ConvertNetCDFToCloudRaster" size="large" />
+          <button refID="ArcDEA_ConvertNetCDFToCloudRaster" size="large" />
         </group>
       </groups>
       <controls>
@@ -37,15 +41,19 @@
         <button id="ArcDEA_FetchSentinel2Data" caption="Sentinel 2 Data" className="FetchSentinel2Data" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Fetch Sentinel 2 Data">Fetch and download Sentinel 2A and 2B data via DEA STAC endpoint.<disabledText /></tooltip>
         </button>
-        <button id="ArcDEA_ResampleData" caption="Resample Data" className="Resample Data" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+		<button id="ArcDEA_CalculateIndices" caption="Calculate Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+		  <tooltip heading="Calculate indices">Calculate indices from previously fetched data.<disabledText /></tooltip>
+		</button>
+        <button id="ArcDEA_ResampleData" caption="Resample Data" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Resample Data">Resample previously fetched data to higher or lower temporal resolutions.<disabledText /></tooltip>
         </button>
         <button id="ArcDEA_ConverterNetCDFToRasters" caption="NetCDF to Rasters" className="ConverterNetCDFToRasters" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Tooltip Heading">Convert a NetCDF to a folder of Rasters.<disabledText /></tooltip>
+          <tooltip heading="Convert NetCDF to Rasters">Convert a NetCDF to a folder of Rasters.<disabledText /></tooltip>
         </button>
         <button id="ArcDEA_ConvertNetCDFToCloudRaster" caption="NetCDF To Cloud Raster" className="ConvertNetCDFToCloudRaster" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Tooltip Heading">Convert a NetCDF to a Cloud Raster Format (CRF) file.<disabledText /></tooltip>
+          <tooltip heading="Convert NetCDF to Cloud Raster">Convert a NetCDF to a Cloud Raster Format (CRF) file.<disabledText /></tooltip>
         </button>
+
       </controls>
     </insertModule>
   </modules>

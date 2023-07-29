@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Toolboxes\toolboxes\ArcDEA.pyt" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />
@@ -29,6 +30,7 @@
     <Content Include="DarkImages\AddInDesktop16.png" />
     <Content Include="DarkImages\AddInDesktop32.png" />
     <Content Include="Toolboxes\toolboxes\ArcDEA.pyt" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />

@@ -40,7 +40,7 @@ def execute(
     # uncomment these when testing
     # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2021, 1, 1)
+    # in_start_date = datetime.datetime(2022, 1, 1)
     # in_end_date = datetime.datetime.now()
     # in_collections = "'Sentinel 2A';'Sentinel 2A'"
     # in_band_assets = "'Blue';'Green';'Red'"
