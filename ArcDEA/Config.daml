@@ -53,7 +53,6 @@
         <button id="ArcDEA_ConvertNetCDFToCloudRaster" caption="NetCDF To Cloud Raster" className="ConvertNetCDFToCloudRaster" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Convert NetCDF to Cloud Raster">Convert a NetCDF to a Cloud Raster Format (CRF) file.<disabledText /></tooltip>
         </button>
-
       </controls>
     </insertModule>
   </modules>
