@@ -1,6 +1,7 @@
 
 def execute(
         parameters
+        # messages  # TODO: use messages input?
 ):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
@@ -22,34 +23,34 @@ def execute(
     # region EXTRACT PARAMETERS
 
     # uncomment these when not testing
-    in_lyr = parameters[0].valueAsText
-    out_nc = parameters[1].valueAsText
-    in_start_date = parameters[2].value
-    in_end_date = parameters[3].value
-    in_collections = parameters[4].valueAsText
-    in_band_assets = parameters[5].valueAsText
-    in_quality_mask_algorithm = parameters[6].value
-    in_quality_flags = parameters[7].valueAsText
-    in_max_out_of_bounds = parameters[8].value
-    in_max_invalid_pixels = parameters[9].value
-    in_nodata_value = parameters[10].value
-    in_srs = parameters[11].value
-    in_res = parameters[12].value
+    # in_lyr = parameters[0].valueAsText
+    # out_nc = parameters[1].valueAsText
+    # in_start_date = parameters[2].value
+    # in_end_date = parameters[3].value
+    # in_collections = parameters[4].valueAsText
+    # in_band_assets = parameters[5].valueAsText
+    # in_quality_mask_algorithm = parameters[6].value
+    # in_quality_flags = parameters[7].valueAsText
+    # in_max_out_of_bounds = parameters[8].value
+    # in_max_invalid_pixels = parameters[9].value
+    # in_nodata_value = parameters[10].value
+    # in_srs = parameters[11].value
+    # in_res = parameters[12].value
 
     # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2022, 1, 1)
-    # in_end_date = datetime.datetime.now()
-    # in_collections = "'Sentinel 2A';'Sentinel 2A'"
-    # in_band_assets = "'Blue';'Green';'Red'"
-    # in_quality_mask_algorithm = 'fMask'
-    # in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
-    # in_max_out_of_bounds = 10
-    # in_max_invalid_pixels = 5
-    # in_nodata_value = -999
-    # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
-    # in_res = 10
+    in_lyr = r'C:\Users\Lewis\Desktop\arcdea\large.shp'
+    out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls_gm.nc'
+    in_start_year = 2015  #datetime.datetime(2022, 1, 1)
+    in_end_year = 2020  #datetime.datetime.now()
+    in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI';'Landsat 9 OLI-2'"
+    in_band_assets = "'Blue';'Green';'Red'"
+    #in_quality_mask_algorithm = 'fMask'
+    #in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
+    #in_max_out_of_bounds = 10
+    #in_max_invalid_pixels = 5
+    in_nodata_value = -999
+    in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
+    in_res = 30
 
     # endregion
 
@@ -59,7 +60,7 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = 12  # TODO: set this via ui
+    num_cpu = 12  #12  # TODO: set this via ui
 
     # endregion
 
@@ -71,19 +72,21 @@ def execute(
     fc_bbox = conversions.get_bbox_from_featureclass(in_lyr)
     fc_epsg = conversions.get_epsg_from_featureclass(in_lyr)
 
-    start_date = in_start_date.date().strftime('%Y-%m-%d')
-    end_date = in_end_date.date().strftime('%Y-%m-%d')
+    start_date = f'{in_start_year}-01-01'
+    end_date = f'{in_end_year}-12-31'
 
-    collections = conversions.multivalue_param_string_to_list(in_collections)
-    collections = conversions.get_collection_names_from_aliases(collections)
+    #collections = conversions.multivalue_param_string_to_list(in_collections)
+    #collections = conversions.get_collection_names_from_aliases(collections)
+    collections = ['ga_ls8c_nbart_gm_cyear_3']  # 'ga_ls5t_nbart_gm_cyear_3', 'ga_ls7e_nbart_gm_cyear_3',
 
-    assets = conversions.multivalue_param_string_to_list(in_band_assets)
-    assets = conversions.get_asset_names_from_band_aliases(assets)
+    #assets = conversions.multivalue_param_string_to_list(in_band_assets)
+    #assets = conversions.get_asset_names_from_band_aliases(assets)
+    assets = ['blue', 'green', 'red']
 
     # TODO: handle 2scloudless
 
-    quality_flags = conversions.multivalue_param_string_to_list(in_quality_flags)
-    quality_flags = conversions.get_quality_flag_names_from_aliases(quality_flags)
+    #quality_flags = conversions.multivalue_param_string_to_list(in_quality_flags)
+    #quality_flags = conversions.get_quality_flag_names_from_aliases(quality_flags)
 
     out_nodata = in_nodata_value
 
@@ -149,8 +152,6 @@ def execute(
 
     downloads = web.group_downloads_by_solar_day(downloads)
 
-    # TODO: dataset maturity
-
     if len(downloads) == 0:
         arcpy.AddWarning('No valid downloads were found.')
         return
@@ -167,11 +168,12 @@ def execute(
     with ThreadPoolExecutor(max_workers=num_cpu) as pool:
         futures = []
         for download in downloads:
-            task = pool.submit(web.validate_and_download,
+            task = pool.submit(web.download,
                                download,
-                               quality_flags,
-                               in_max_out_of_bounds,
-                               in_max_invalid_pixels)
+                               #quality_flags,
+                               #in_max_out_of_bounds,
+                               #in_max_invalid_pixels
+                               )
 
             futures.append(task)
 
@@ -207,4 +209,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+execute(None)

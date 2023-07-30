@@ -515,6 +515,8 @@ def convert_stac_features_to_downloads(
 
         if 'properties' in feature:
             date = feature.get('properties').get('datetime')
+            if 'T' in date:
+                date = date.split('T')[0]
 
             if 'geometry' in feature:
                 coordinates = feature.get('geometry').get('coordinates')[0]
@@ -604,7 +606,6 @@ def validate_and_download(
     band data to a specified location and file format captured within the
     download.
     :param download: Download object.
-    #:param index: String name of index if requested, else None.
     :param quality_flags: List of integers representing valid mask values.
     :param max_out_of_bounds: Float representing max percentage of out of bounds pixels.
     :param max_invalid_pixels: Float representing max percentage of invalid pixels.
@@ -626,6 +627,47 @@ def validate_and_download(
             message = f'Download {download.date}: successfully downloaded.'
         else:
             message = f'Download {download.date}: skipped; too many invalid pixels.'
+    except:
+        message = f'Download {download.date}: error occurred.'
+
+    download.close_datasets()
+
+    return message
+
+
+def download(
+        download: Download,
+        #quality_flags: Union[list[int], None],
+        #max_out_of_bounds: float,
+        #max_invalid_pixels: float,
+) -> str:
+    """
+    Takes a single download object and downloads the raw
+    band data to a specified location and file format captured within the
+    download. Does not check for a mask, unlike validate_and_download.
+    :param download: Download object.
+    #:param max_out_of_bounds: Float representing max percentage of out of bounds pixels.
+    #:param max_invalid_pixels: Float representing max percentage of invalid pixels.
+    :return: String message indicating success or failure of download.
+    """
+
+    try:
+        # FIXME: ls9 doesnt have oa_fmask via WCS service?
+        #download.set_mask_dataset_via_wcs()
+        #is_valid = download.is_mask_valid(quality_flags,
+                                          #max_out_of_bounds,
+                                          #max_invalid_pixels)
+
+        # TODO: check out of bounds? used mask before, might try -999?
+
+        #if is_valid is True:
+        download.set_band_dataset_via_wcs()
+        #download.set_band_dataset_nodata_via_mask(quality_flags)
+        download.export_band_dataset_to_netcdf_file()
+
+        message = f'Download {download.date}: successfully downloaded.'
+        #else:
+            #message = f'Download {download.date}: skipped; too many invalid pixels.'
     except:
         message = f'Download {download.date}: error occurred.'
 
