@@ -13,6 +13,7 @@ It provides:
 
 ## Requirements
 * ArcGIS Pro version 3.0 or above.
+* Minimum 16gb RAM (>= 32gb recommended).
 * Internet connection.
 
 ## Installation
