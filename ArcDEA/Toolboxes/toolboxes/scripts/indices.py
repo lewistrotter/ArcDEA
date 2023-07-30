@@ -359,6 +359,207 @@ def wi(
     return ds
 
 
+def bai(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        red = 'nbart_red'
+        nir = 'nbart_nir'
+    elif collection == 's2':
+        red = 'nbart_red'
+        nir = 'nbart_nir_1'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # normalise values 0-10000 to 0-1
+        ds = ds / 10000.0
+
+        # calc index, citation martin (1998)
+        ds['bai'] = (1.0 / ((0.10 - ds[red]) ** 2 +
+                            (0.06 - ds[nir]) ** 2))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def nbr(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        nir = 'nbart_nir'
+        swir_2 = 'nbart_swir_2'
+    elif collection == 's2':
+        nir = 'nbart_nir_1'
+        swir_2 = 'nbart_swir_3'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # calc index, citation lopez garcia (1991)
+        ds['nbr'] = ((ds[nir] - ds[swir_2]) /
+                     (ds[nir] + ds[swir_2]))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def ndbi(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        nir = 'nbart_nir'
+        swir_1 = 'nbart_swir_1'
+    elif collection == 's2':
+        nir = 'nbart_nir_1'
+        swir_1 = 'nbart_swir_2'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # calc index, citation zha (2003)
+        ds['ndbi'] = ((ds[swir_1] - ds[nir]) /
+                      (ds[swir_1] + ds[nir]))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def bui(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        red = 'nbart_red'
+        nir = 'nbart_nir'
+        swir_1 = 'nbart_swir_1'
+    elif collection == 's2':
+        red = 'nbart_red'
+        nir = 'nbart_nir_1'
+        swir_1 = 'nbart_swir_2'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # calc index, citation he (2010)
+        ds['bui'] = (((ds[swir_1] - ds[nir]) /
+                      (ds[swir_1] + ds[nir])) -
+                     ((ds[nir] - ds[red]) /
+                      (ds[nir] + ds[red])))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def baei(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        red = 'nbart_red'
+        green = 'nbart_green'
+        swir_1 = 'nbart_swir_1'
+    elif collection == 's2':
+        red = 'nbart_red'
+        green = 'nbart_green'
+        swir_1 = 'nbart_swir_2'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # normalise values 0-10000 to 0-1
+        ds = ds / 10000.0
+
+        # calc index, citation bouzekri et al. (2015)
+        ds['baei'] = ((ds[red] + 0.3) /
+                      (ds[green] + ds[swir_1]))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def nbi(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        red = 'nbart_red'
+        nir = 'nbart_nir'
+        swir_1 = 'nbart_swir_1'
+    elif collection == 's2':
+        red = 'nbart_red'
+        nir = 'nbart_nir_1'
+        swir_1 = 'nbart_swir_2'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # calc index, citation jieli et al. (2010)
+        ds['nbi'] = (ds[swir_1] + ds[red]) / ds[nir]
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
+def bsi(
+        ds: xr.Dataset,
+        collection: str
+) -> xr.Dataset:
+
+    # prepare relevant bands
+    if collection == 'ls':
+        blue = 'nbart_blue'
+        red = 'nbart_red'
+        nir = 'nbart_nir'
+        swir_1 = 'nbart_swir_1'
+    elif collection == 's2':
+        blue = 'nbart_blue'
+        red = 'nbart_red'
+        nir = 'nbart_nir_1'
+        swir_1 = 'nbart_swir_2'
+    else:
+        raise ValueError(f'Collection: {collection} not supported.')
+
+    try:
+        # calc index, citation rikimaru et al. (2002)
+        ds['bsi'] = (((ds[swir_1] + ds[red]) -
+                      (ds[nir] + ds[blue])) /
+                     ((ds[swir_1] + ds[red]) +
+                      (ds[nir] + ds[blue])))
+
+    except Exception as e:
+        raise e
+
+    return ds
+
+
 def cmr(
         ds: xr.Dataset,
         collection: str

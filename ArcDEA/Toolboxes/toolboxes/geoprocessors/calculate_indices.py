@@ -133,6 +133,24 @@ def execute(
             elif in_index.startswith('WE:'):
                 ds = indices.wi(ds=ds, collection=collection)
 
+        elif in_type == 'Fire':
+            if in_index.startswith('BAI:'):
+                ds = indices.bai(ds=ds, collection=collection)
+            elif in_index.startswith('NBR:'):
+                ds = indices.nbr(ds=ds, collection=collection)
+
+        elif in_type == 'Urban':
+            if in_index.startswith('NDBI:'):
+                ds = indices.ndbi(ds=ds, collection=collection)
+            elif in_index.startswith('BUI:'):
+                ds = indices.bui(ds=ds, collection=collection)
+            elif in_index.startswith('BAEI:'):
+                ds = indices.baei(ds=ds, collection=collection)
+            elif in_index.startswith('NBI:'):
+                ds = indices.nbi(ds=ds, collection=collection)
+            elif in_index.startswith('BSI:'):
+                ds = indices.bsi(ds=ds, collection=collection)
+
         elif in_type == 'Minerals':
             if in_index.startswith('CMR:'):
                 ds = indices.cmr(ds=ds, collection=collection)
