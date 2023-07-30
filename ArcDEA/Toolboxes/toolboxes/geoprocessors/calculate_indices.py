@@ -82,8 +82,13 @@ def execute(
     ds_band_attrs = ds[list(ds)[0]].attrs
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
+    # extract collections, ensure it's a list
+    collections = ds.attrs.get('collections')
+    if not isinstance(collections, list):
+        collections = [collections]
+
     # get collection
-    collection = ';'.join([c for c in ds.attrs.get('collections')])
+    collection = ';'.join([c for c in collections])
     if 'ls' in collection:
         collection = 'ls'
     elif 's2' in collection:

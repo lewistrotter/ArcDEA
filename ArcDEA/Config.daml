@@ -15,43 +15,37 @@
           <group refID="ArcDEA_Group1" />
           <group refID="ArcDEA_Group2" />
           <group refID="ArcDEA_Group3" />
-		  <group refID="ArcDEA_Group4" />
+          <group refID="ArcDEA_Group4" />
         </tab>
       </tabs>
       <groups>
         <group id="ArcDEA_Group1" caption="Fetch Data" appearsOnAddInTab="false">
-          <button refID="ArcDEA_FetchLandsatData" size="large" />
-          <button refID="ArcDEA_FetchSentinel2Data" size="large" />
+          <gallery refID="ArcDEA_FetchBaselineGallery" inline="false" size="large" />
         </group>
-		<group id="ArcDEA_Group2" caption="Indices" appearsOnAddInTab="false">
-		  <button refID="ArcDEA_CalculateIndices" size="large" />
-		</group>
-        <group id="ArcDEA_Group3" caption="Manage Data" appearsOnAddInTab="false">
+        <group id="ArcDEA_Group2" caption="Indices" appearsOnAddInTab="false">
+          <button refID="ArcDEA_CalculateIndices" size="large" />
+        </group>
+        <group id="ArcDEA_Group3" caption="Processing" appearsOnAddInTab="false">
           <button refID="ArcDEA_ResampleData" size="large" />
         </group>
         <group id="ArcDEA_Group4" caption="Converters" appearsOnAddInTab="false">
-          <button refID="ArcDEA_ConverterNetCDFToRasters" size="large" />
-          <button refID="ArcDEA_ConvertNetCDFToCloudRaster" size="large" />
+		  <gallery refID="ArcDEA_ConvertersGallery" inline="false" size="large" />
         </group>
       </groups>
+      <galleries>
+        <gallery id="ArcDEA_FetchBaselineGallery" caption="Fetch Baseline" className="FetchBaselineGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchBaselineGalleryTemplate.xaml" templateID="FetchBaselineGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Fetch baseline satellite data.">Download analysis ready Lansat and Sentinel 2 multispectral data.<disabledText /></tooltip>
+        </gallery>
+        <gallery id="ArcDEA_ConvertersGallery" caption="Convert NetCDF" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Convert NetCDFs to other formats.">Convert NetCDFs to rasters, cloud rasters and geodatabase mosaics.<disabledText /></tooltip>
+        </gallery>
+      </galleries>
       <controls>
-        <button id="ArcDEA_FetchLandsatData" caption="Landsat Data" className="FetchLandsatData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Fetch Landsat Data">Fetch and download Landsat 5, 7, 8 and 9 data via DEA STAC endpoint.<disabledText /></tooltip>
+        <button id="ArcDEA_CalculateIndices" caption="Calculate Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Calculate indices">Calculate indices from previously fetched data.<disabledText /></tooltip>
         </button>
-        <button id="ArcDEA_FetchSentinel2Data" caption="Sentinel 2 Data" className="FetchSentinel2Data" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Fetch Sentinel 2 Data">Fetch and download Sentinel 2A and 2B data via DEA STAC endpoint.<disabledText /></tooltip>
-        </button>
-		<button id="ArcDEA_CalculateIndices" caption="Calculate Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-		  <tooltip heading="Calculate indices">Calculate indices from previously fetched data.<disabledText /></tooltip>
-		</button>
         <button id="ArcDEA_ResampleData" caption="Resample Data" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Resample Data">Resample previously fetched data to higher or lower temporal resolutions.<disabledText /></tooltip>
-        </button>
-        <button id="ArcDEA_ConverterNetCDFToRasters" caption="NetCDF to Rasters" className="ConverterNetCDFToRasters" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Convert NetCDF to Rasters">Convert a NetCDF to a folder of Rasters.<disabledText /></tooltip>
-        </button>
-        <button id="ArcDEA_ConvertNetCDFToCloudRaster" caption="NetCDF To Cloud Raster" className="ConvertNetCDFToCloudRaster" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Convert NetCDF to Cloud Raster">Convert a NetCDF to a Cloud Raster Format (CRF) file.<disabledText /></tooltip>
         </button>
       </controls>
     </insertModule>
