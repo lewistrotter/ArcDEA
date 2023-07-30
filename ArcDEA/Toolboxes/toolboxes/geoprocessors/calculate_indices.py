@@ -19,17 +19,13 @@ def execute(
     in_nc = parameters[0].valueAsText
     out_nc = parameters[1].valueAsText
     in_type = parameters[2].valueAsText
-    in_index_vegetation = parameters[3].valueAsText
-    in_index_water = parameters[4].valueAsText
-    in_index_minerals = parameters[5].valueAsText
+    in_index = parameters[3].valueAsText
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_agg.nc'
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls.nc'
+    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls_ndvi.nc'
     # in_type = 'Vegetation'
-    # in_index_vegetation = 'NDVI: (Normalised Difference Vegetation Index)'
-    # in_index_water = 'NDWI: (Normalised Difference Water Index)'
-    # in_index_minerals = 'CMR: Clay Minerals Ratio'
+    # in_index = 'NDVI: (Normalised Difference Vegetation Index)'
 
     # endregion
 
@@ -88,7 +84,7 @@ def execute(
 
     # get collection
     collection = ';'.join([c for c in ds.attrs.get('collections')])
-    if 'ls' in collections:
+    if 'ls' in collection:
         collection = 'ls'
     elif 's2' in collection:
         collection = 's2'
@@ -111,19 +107,39 @@ def execute(
 
     try:
         if in_type == 'Vegetation':
-            if in_index_vegetation.startswith('NDVI:'):
+            if in_index.startswith('NDVI:'):
                 ds = indices.ndvi(ds=ds, collection=collection)
-            # elif
+            elif in_index.startswith('EVI:'):
+                ds = indices.evi(ds=ds, collection=collection)
+            elif in_index.startswith('LAI:'):
+                ds = indices.lai(ds=ds, collection=collection)
+            elif in_index.startswith('MAVI:'):
+                ds = indices.mavi(ds=ds, collection=collection)
+            # savi
+            elif in_index.startswith('MSAVI:'):
+                ds = indices.msavi(ds=ds, collection=collection)
+            elif in_index.startswith('NDCI:'):
+                ds = indices.ndci(ds=ds, collection=collection)
+            elif in_index.startswith('kNDVI:'):
+                ds = indices.kndvi(ds=ds, collection=collection)
 
         elif in_type == 'Water':
-            if in_index_water.startswith('NDWI:'):
+            if in_index.startswith('NDMI:'):
+                ds = indices.ndmi(ds=ds, collection=collection)
+            elif in_index.startswith('NDWI:'):
                 ds = indices.ndwi(ds=ds, collection=collection)
-            # elif
+            elif in_index.startswith('MNDWI:'):
+                ds = indices.mndwi(ds=ds, collection=collection)
+            elif in_index.startswith('WE:'):
+                ds = indices.wi(ds=ds, collection=collection)
 
         elif in_type == 'Minerals':
-            if in_index_minerals.startswith('CMR:'):
+            if in_index.startswith('CMR:'):
                 ds = indices.cmr(ds=ds, collection=collection)
-            # elif
+            elif in_index.startswith('FMR:'):
+                ds = indices.fmr(ds=ds, collection=collection)
+            elif in_index.startswith('IOR:'):
+                ds = indices.ior(ds=ds, collection=collection)
 
     except Exception as e:
         arcpy.AddError('Error occurred when calculating index. Check messages.')
@@ -155,7 +171,7 @@ def execute(
 
     # set nan back to original nodata value
     # TODO: not sure if we want to do this
-    ds = ds.where(~ds.isnull(), nodata)
+    #ds = ds.where(~ds.isnull(), nodata)
 
     # TODO: set dtype to int? what about index?
     # ...

@@ -167,7 +167,7 @@ def execute(
 
     # set nan back to original nodata value
     # TODO: not sure if we want to do this
-    ds = ds.where(~ds.isnull(), nodata)
+    #ds = ds.where(~ds.isnull(), nodata)
 
     # TODO: set dtype to int? what about index?
     # ...
