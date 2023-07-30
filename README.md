@@ -3,7 +3,7 @@
 ArcDEA is a free and open-source ArcGIS Pro add-in that provides efficient access to the Digital Earth Australia (DEA) public data repository. 
 
 It provides:
-* user-fiendly interface for downloading bulk Landsat, Sentinel and [other](https://www.dea.ga.gov.au/products) satellite products;
+* user-friendly interface for downloading bulk Landsat, Sentinel and [other](https://www.dea.ga.gov.au/products) satellite products;
 * tools for aggregating, interpolating, harmonising and converting voliminous satellite time-series data;
 * interactive visualisation and graphing of satellite imagery; and
 * ArcGIS toolbox compatible with model builder.
