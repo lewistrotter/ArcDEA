@@ -16,6 +16,7 @@
           <group refID="ArcDEA_Group2" />
           <group refID="ArcDEA_Group3" />
           <group refID="ArcDEA_Group4" />
+          <group refID="ArcDEA_Group5" />
         </tab>
       </tabs>
       <groups>
@@ -27,9 +28,13 @@
         </group>
         <group id="ArcDEA_Group3" caption="Processing" appearsOnAddInTab="false">
           <button refID="ArcDEA_ResampleData" size="large" />
+		  <button refID="ArcDEA_GroupData" size="large" />
         </group>
         <group id="ArcDEA_Group4" caption="Converters" appearsOnAddInTab="false">
-		  <gallery refID="ArcDEA_ConvertersGallery" inline="false" size="large" />
+          <gallery refID="ArcDEA_ConvertersGallery" inline="false" size="large" />
+        </group>
+        <group id="ArcDEA_Group5" caption="Settings" appearsOnAddInTab="false">
+          <gallery refID="ArcDEA_SettingsGallery" inline="false" size="large" />
         </group>
       </groups>
       <galleries>
@@ -39,13 +44,19 @@
         <gallery id="ArcDEA_ConvertersGallery" caption="Convert NetCDF" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Convert NetCDFs to other formats.">Convert NetCDFs to rasters, cloud rasters and geodatabase mosaics.<disabledText /></tooltip>
         </gallery>
+        <gallery id="ArcDEA_SettingsGallery" caption="Settings" className="SettingsGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//SettingsGalleryTemplate.xaml" templateID="SettingsGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Settings and information.">View settings and information about the ArcDEA add-in.<disabledText /></tooltip>
+        </gallery>
       </galleries>
       <controls>
         <button id="ArcDEA_CalculateIndices" caption="Calculate Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Calculate indices">Calculate indices from previously fetched data.<disabledText /></tooltip>
         </button>
-        <button id="ArcDEA_ResampleData" caption="Resample Data" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Resample Data">Resample previously fetched data to higher or lower temporal resolutions.<disabledText /></tooltip>
+        <button id="ArcDEA_ResampleData" caption="Resample" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Resample Data">Resample previously fetched data to higher or lower temporal dimension.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_GroupData" caption="Group" className="GroupData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Group Data">Group previously fetched data based on temporal dimension.<disabledText /></tooltip>
         </button>
       </controls>
     </insertModule>

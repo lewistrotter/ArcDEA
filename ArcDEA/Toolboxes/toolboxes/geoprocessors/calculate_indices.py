@@ -127,6 +127,8 @@ def execute(
                 ds = indices.ndci(ds=ds, collection=collection)
             elif in_index.startswith('kNDVI:'):
                 ds = indices.kndvi(ds=ds, collection=collection)
+            else:
+                raise AttributeError('Vegetation index does not exist.')
 
         elif in_type == 'Water':
             if in_index.startswith('NDMI:'):
@@ -135,14 +137,18 @@ def execute(
                 ds = indices.ndwi(ds=ds, collection=collection)
             elif in_index.startswith('MNDWI:'):
                 ds = indices.mndwi(ds=ds, collection=collection)
-            elif in_index.startswith('WE:'):
+            elif in_index.startswith('WI:'):
                 ds = indices.wi(ds=ds, collection=collection)
+            else:
+                raise AttributeError('Water index does not exist.')
 
         elif in_type == 'Fire':
             if in_index.startswith('BAI:'):
                 ds = indices.bai(ds=ds, collection=collection)
             elif in_index.startswith('NBR:'):
                 ds = indices.nbr(ds=ds, collection=collection)
+            else:
+                raise AttributeError('Fire index does not exist.')
 
         elif in_type == 'Urban':
             if in_index.startswith('NDBI:'):
@@ -155,6 +161,8 @@ def execute(
                 ds = indices.nbi(ds=ds, collection=collection)
             elif in_index.startswith('BSI:'):
                 ds = indices.bsi(ds=ds, collection=collection)
+            else:
+                raise AttributeError('Urban index does not exist.')
 
         elif in_type == 'Minerals':
             if in_index.startswith('CMR:'):
@@ -163,6 +171,8 @@ def execute(
                 ds = indices.fmr(ds=ds, collection=collection)
             elif in_index.startswith('IOR:'):
                 ds = indices.ior(ds=ds, collection=collection)
+            else:
+                raise AttributeError('Mineral index does not exist.')
 
     except Exception as e:
         arcpy.AddError('Error occurred when calculating index. Check messages.')

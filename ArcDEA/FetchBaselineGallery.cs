@@ -14,7 +14,7 @@ namespace ArcDEA
         protected override void OnDropDownOpened()
         {
             Initialize();
-            //AlwaysFireOnClick = true;
+            AlwaysFireOnClick = true;
         }
 
         private void Initialize()

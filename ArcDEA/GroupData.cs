@@ -20,11 +20,11 @@ using System.Threading.Tasks;
 
 namespace ArcDEA
 {
-    internal class ConvertNetCDFToCloudRaster : Button
+    internal class GroupData : Button
     {
         protected override void OnClick()
         {
-            string toolname = "ArcDEA.ConvertNetCDFToCloudRaster";
+            string toolname = "ArcDEA.GroupData";
 
             try
             {
