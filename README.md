@@ -1,6 +1,6 @@
 # ArcDEA: ArcGIS Pro Digital Earth Australia Add-In
 
-ArcDEA is a free and open-source ArcGIS Pro add-in that provides efficient access to the Digital Earth Australia (DEA) public data repository. 
+ArcDEA is a free and open-source ArcGIS Pro add-in that provides efficient access to the Digital Earth Australia (DEA) public data repository. Note: this plugin is unofficial and not endorsed by DEA.
 
 It provides:
 * user-friendly interface for downloading bulk Landsat, Sentinel and [other](https://www.dea.ga.gov.au/products) satellite products;
