@@ -15,13 +15,14 @@
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_netcdf_to_rasters.py" />
-    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_data.py" />
-    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_data.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_baseline.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <None Remove="Toolboxes\toolboxes\scripts\constants.py" />
-    <None Remove="Toolboxes\toolboxes\scripts\conversions.py" />
     <None Remove="Toolboxes\toolboxes\scripts\indices.py" />
+    <None Remove="Toolboxes\toolboxes\scripts\shared.py" />
     <None Remove="Toolboxes\toolboxes\scripts\web.py" />
   </ItemGroup>
   <ItemGroup>
@@ -35,13 +36,14 @@
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />
-    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_data.py" />
-    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_data.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_baseline.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <Content Include="Toolboxes\toolboxes\scripts\constants.py" />
-    <Content Include="Toolboxes\toolboxes\scripts\conversions.py" />
     <Content Include="Toolboxes\toolboxes\scripts\indices.py" />
+    <Content Include="Toolboxes\toolboxes\scripts\shared.py" />
     <Content Include="Toolboxes\toolboxes\scripts\web.py" />
   </ItemGroup>
   <ItemGroup>

@@ -22,13 +22,14 @@
       <groups>
         <group id="ArcDEA_Group1" caption="Fetch Data" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_FetchBaselineGallery" inline="false" size="large" />
+          <gallery refID="ArcDEA_FetchGeomedGallery" inline="false" size="large" />
         </group>
         <group id="ArcDEA_Group2" caption="Indices" appearsOnAddInTab="false">
           <button refID="ArcDEA_CalculateIndices" size="large" />
         </group>
         <group id="ArcDEA_Group3" caption="Processing" appearsOnAddInTab="false">
           <button refID="ArcDEA_ResampleData" size="large" />
-		  <button refID="ArcDEA_GroupData" size="large" />
+          <button refID="ArcDEA_GroupData" size="large" />
         </group>
         <group id="ArcDEA_Group4" caption="Converters" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_ConvertersGallery" inline="false" size="large" />
@@ -39,9 +40,12 @@
       </groups>
       <galleries>
         <gallery id="ArcDEA_FetchBaselineGallery" caption="Fetch Baseline" className="FetchBaselineGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchBaselineGalleryTemplate.xaml" templateID="FetchBaselineGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Fetch baseline satellite data.">Download analysis ready Lansat and Sentinel 2 multispectral data.<disabledText /></tooltip>
+          <tooltip heading="Fetch baseline satellite data.">Download analysis ready Lansat and Sentinel 2 baseline data.<disabledText /></tooltip>
         </gallery>
-        <gallery id="ArcDEA_ConvertersGallery" caption="Convert NetCDF" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+		<gallery id="ArcDEA_FetchGeomedGallery" caption="Fetch Geomedian" className="FetchGeomedGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchGeomedGalleryTemplate.xaml" templateID="FetchGeomedGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+		  <tooltip heading="Fetch geomedian satellite data.">Download analysis ready Lansat and Sentinel 2 geomedian data.<disabledText /></tooltip>
+		</gallery>
+		  <gallery id="ArcDEA_ConvertersGallery" caption="Convert NetCDF" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Convert NetCDFs to other formats.">Convert NetCDFs to rasters, cloud rasters and geodatabase mosaics.<disabledText /></tooltip>
         </gallery>
         <gallery id="ArcDEA_SettingsGallery" caption="Settings" className="SettingsGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//SettingsGalleryTemplate.xaml" templateID="SettingsGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">

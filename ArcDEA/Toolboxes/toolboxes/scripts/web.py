@@ -71,6 +71,7 @@ class Download:
     ) -> None:
         """
         Convert datetime string in date field to just date.
+
         :return: Nothing.
         """
 
@@ -78,12 +79,36 @@ class Download:
             date = pd.to_datetime(self.date)
             self.date = date.strftime('%Y-%m-%d')
 
+    def get_collection_code(
+            self
+    ) -> str:
+        """
+
+        :return:
+        """
+
+        if 'ls5t' in self.collection:
+            return 'ls5'
+        elif 'ls7e' in self.collection:
+            return 'ls7'
+        elif 'ls8c' in self.collection:
+            return 'ls8'
+        elif 'ls9c' in self.collection:
+            return 'ls9'
+        elif 's2am' in self.collection:
+            return 's2a'
+        elif 's2bm' in self.collection:
+            return 's2b'
+        else:
+            return 'ukn'
+
     def is_slc_off(
             self
     ) -> bool:
         """
         Checks if download contains Landsat-7 data after the known
         slc sensor failure date (2003-05-31).
+
         :return: Boolean indicating whther download is in slc-off data range.
         """
 
@@ -132,7 +157,9 @@ class Download:
         :return:
         """
 
-        out_file = os.path.join(self.out_path, 'R' + self.date + self.out_extension)
+        code = self.get_collection_code()
+        fn = 'R' + self.date + '-' + code + self.out_extension
+        out_file = os.path.join(self.out_path, fn)
 
         return out_file
 
@@ -295,6 +322,8 @@ class Download:
             'spatial_ref': crs_wkt,
             'grid_mapping_name': crs_name
         }
+
+        ds = ds.assign_coords({'platform': self.get_collection_code()})
 
         if 'time' not in ds:
             dt = pd.to_datetime(self.date, format='%Y-%m-%d')
@@ -515,8 +544,6 @@ def convert_stac_features_to_downloads(
 
         if 'properties' in feature:
             date = feature.get('properties').get('datetime')
-            if 'T' in date:
-                date = date.split('T')[0]
 
             if 'geometry' in feature:
                 coordinates = feature.get('geometry').get('coordinates')[0]
@@ -533,6 +560,8 @@ def convert_stac_features_to_downloads(
                     out_path=out_path,
                     out_extension=out_extension
                 )
+
+                download.convert_datetime_to_date()
 
                 downloads.append(download)
 
@@ -554,15 +583,15 @@ def group_downloads_by_solar_day(
     :return: List of Download objects grouped by solar day.
     """
 
-    for download in sorted(downloads, key=lambda d: d.date):
-        download.convert_datetime_to_date()
+    downloads = sorted(downloads, key=lambda d: d.date)
 
+    ids = []
     clean_downloads = []
-    processed_dates = []
-    for download in downloads:
-        if download.date not in processed_dates:
-            clean_downloads.append(download)
-            processed_dates.append(download.date)
+    for dl in downloads:
+        unique_id = dl.date + '-' + dl.collection
+        if unique_id not in ids:
+            clean_downloads.append(dl)
+            ids.append(unique_id)
 
     num_removed = len(downloads) - len(clean_downloads)
     arcpy.AddMessage(f'Grouped {num_removed} downloads by solar day.')
@@ -612,6 +641,9 @@ def validate_and_download(
     :return: String message indicating success or failure of download.
     """
 
+    date = download.date
+    code = download.get_collection_code()
+
     try:
         # FIXME: ls9 doesnt have oa_fmask via WCS service?
         download.set_mask_dataset_via_wcs()
@@ -623,12 +655,12 @@ def validate_and_download(
             download.set_band_dataset_via_wcs()
             download.set_band_dataset_nodata_via_mask(quality_flags)
             download.export_band_dataset_to_netcdf_file()
-
-            message = f'Download {download.date}: successfully downloaded.'
+            message = f'Download {code} {date}: successfully downloaded.'
         else:
-            message = f'Download {download.date}: skipped; too many invalid pixels.'
+            message = f'Download {code} {date}: skipped; too many invalid pixels.'
+
     except:
-        message = f'Download {download.date}: error occurred.'
+        message = f'Download {code} {date}: error occurred.'
 
     download.close_datasets()
 
@@ -636,10 +668,7 @@ def validate_and_download(
 
 
 def download(
-        download: Download,
-        #quality_flags: Union[list[int], None],
-        #max_out_of_bounds: float,
-        #max_invalid_pixels: float,
+        download: Download
 ) -> str:
     """
     Takes a single download object and downloads the raw
@@ -651,46 +680,66 @@ def download(
     :return: String message indicating success or failure of download.
     """
 
+    date = download.date
+    code = download.get_collection_code()
+
     try:
-        # FIXME: ls9 doesnt have oa_fmask via WCS service?
-        #download.set_mask_dataset_via_wcs()
-        #is_valid = download.is_mask_valid(quality_flags,
-                                          #max_out_of_bounds,
-                                          #max_invalid_pixels)
-
-        # TODO: check out of bounds? used mask before, might try -999?
-
-        #if is_valid is True:
         download.set_band_dataset_via_wcs()
-        #download.set_band_dataset_nodata_via_mask(quality_flags)
         download.export_band_dataset_to_netcdf_file()
-
-        message = f'Download {download.date}: successfully downloaded.'
-        #else:
-            #message = f'Download {download.date}: skipped; too many invalid pixels.'
+        message = f'Download {code} {date}: successfully downloaded.'
     except:
-        message = f'Download {download.date}: error occurred.'
+        message = f'Download {code} {date}: error occurred.'
 
     download.close_datasets()
 
     return message
 
 
+def rename_bands_in_netcdf_files(
+        folder: str,
+        rename_map: dict
+) -> None:
+
+    files = []
+    for file in os.listdir(folder):
+        if file.endswith('.nc'):
+            files.append(os.path.join(folder, file))
+
+    if len(files) == 0:
+        return
+
+    try:
+        for file in files:
+            ds = xr.open_dataset(file)
+
+            vars = list(ds)
+            for v in vars:
+                ds = ds.rename({v: rename_map[v]})
+
+            ds.close()
+            ds.to_netcdf(file)
+    except:
+        arcpy.AddMessage('NetCDF file could not be renamed.')
+        pass
+
+    return
+
+
 def combine_netcdf_files(
-        data_folder: str,
+        folder: str,
         out_nc: str
 ) -> None:
     """
 
-    :param data_folder:
+    :param folder:
     :param out_nc:
     :return:
     """
 
     files = []
-    for file in os.listdir(data_folder):
+    for file in os.listdir(folder):
         if file.endswith('.nc'):
-            files.append(os.path.join(data_folder, file))
+            files.append(os.path.join(folder, file))
 
     if len(files) < 2:
         return
@@ -706,7 +755,7 @@ def combine_netcdf_files(
     if total_file_size < available_mem * 0.90:
         ds_list, collections = [], []
         for file in files:
-            ds = xr.open_dataset(file, engine='netcdf4')
+            ds = xr.open_dataset(file)
             collections.append(ds.attrs['collections'])
             ds_list.append(ds)
 
@@ -722,71 +771,71 @@ def combine_netcdf_files(
     else:
         arcpy.AddWarning('NetCDF is too big for memory, using slow (but safe) combine method.')
 
-        raise NotImplemented('not ready')
-
-        ds = xr.open_dataset(files[0])
-
-        # ds_attrs = ds.attrs
-        # ds_band_attrs = ds[list(ds)[0]].attrs
-        # ds_spatial_ref_attrs = ds['spatial_ref'].attrs
-
-        arcpy.md.MergeMultidimensionalRasters(in_multidimensional_rasters=files,
-                                              out_raster=out_nc,
-                                              resolve_overlap_method='FIRST')
-
-        ds = xr.open_dataset(out_nc)
-
-        # TODO: most of below is dupe code from above
-
-        if 'StdTime' in ds:
-            ds = ds.rename({'StdTime': 'time'})
-
-        if 'lat' in ds and 'lon' in ds:
-            ds = ds.rename({'lat': 'y', 'lon': 'x'})
-
-        # TODO: newer versions of gdal may break this
-        for band in ds:
-            if len(ds[band].shape) == 0:
-                crs_name = band
-                crs_wkt = str(ds[band].attrs.get('spatial_ref'))
-                ds = ds.drop_vars(crs_name)
-                break
-
-        # TODO: get epsg from layer
-        out_epsg = 4326
-
-        ds = ds.assign_coords({'spatial_ref': out_epsg})
-        ds['spatial_ref'].attrs = {
-            'spatial_ref': crs_wkt,
-            'grid_mapping_name': crs_name
-        }
-
-        for dim in ds.dims:
-            if dim in ['x', 'y']:
-                ds[dim].attrs = {
-                    #'units': 'metre'  # TODO: how to get units?
-                    'resolution': np.mean(np.diff(ds[dim])),
-                    'crs': f'EPSG:{out_epsg}'
-                }
-
-        for i, band in enumerate(ds):
-            ds[band].attrs = {
-                'units': '1',
-                #'nodata': self.nodata,  TODO: implemented out_nodata
-                'crs': f'EPSG:{out_epsg}',
-                'grid_mapping': 'spatial_ref',
-            }
-
-            #ds = ds.rename({band: self.assets[i]})
-
-        # TODO: we wipe gdal, history, conventions, other metadata
-        ds.attrs = {
-            'crs': f'EPSG:{out_epsg}',
-            'grid_mapping': 'spatial_ref'
-        }
-
-        ds.to_netcdf(out_nc)
-        ds.close()
+        # raise NotImplemented('not ready')
+        #
+        # ds = xr.open_dataset(files[0])
+        #
+        # # ds_attrs = ds.attrs
+        # # ds_band_attrs = ds[list(ds)[0]].attrs
+        # # ds_spatial_ref_attrs = ds['spatial_ref'].attrs
+        #
+        # arcpy.md.MergeMultidimensionalRasters(in_multidimensional_rasters=files,
+        #                                       out_raster=out_nc,
+        #                                       resolve_overlap_method='FIRST')
+        #
+        # ds = xr.open_dataset(out_nc)
+        #
+        # # TODO: most of below is dupe code from above
+        #
+        # if 'StdTime' in ds:
+        #     ds = ds.rename({'StdTime': 'time'})
+        #
+        # if 'lat' in ds and 'lon' in ds:
+        #     ds = ds.rename({'lat': 'y', 'lon': 'x'})
+        #
+        # # TODO: newer versions of gdal may break this
+        # for band in ds:
+        #     if len(ds[band].shape) == 0:
+        #         crs_name = band
+        #         crs_wkt = str(ds[band].attrs.get('spatial_ref'))
+        #         ds = ds.drop_vars(crs_name)
+        #         break
+        #
+        # # TODO: get epsg from layer
+        # out_epsg = 4326
+        #
+        # ds = ds.assign_coords({'spatial_ref': out_epsg})
+        # ds['spatial_ref'].attrs = {
+        #     'spatial_ref': crs_wkt,
+        #     'grid_mapping_name': crs_name
+        # }
+        #
+        # for dim in ds.dims:
+        #     if dim in ['x', 'y']:
+        #         ds[dim].attrs = {
+        #             #'units': 'metre'  # TODO: how to get units?
+        #             'resolution': np.mean(np.diff(ds[dim])),
+        #             'crs': f'EPSG:{out_epsg}'
+        #         }
+        #
+        # for i, band in enumerate(ds):
+        #     ds[band].attrs = {
+        #         'units': '1',
+        #         #'nodata': self.nodata,  TODO: implemented out_nodata
+        #         'crs': f'EPSG:{out_epsg}',
+        #         'grid_mapping': 'spatial_ref',
+        #     }
+        #
+        #     #ds = ds.rename({band: self.assets[i]})
+        #
+        # # TODO: we wipe gdal, history, conventions, other metadata
+        # ds.attrs = {
+        #     'crs': f'EPSG:{out_epsg}',
+        #     'grid_mapping': 'spatial_ref'
+        # }
+        #
+        # ds.to_netcdf(out_nc)
+        # ds.close()
 
         # ds.attrs = ds_attrs
         # ds['spatial_ref'].attrs = ds_spatial_ref_attrs
@@ -794,9 +843,3 @@ def combine_netcdf_files(
         #     ds[var].attrs = ds_band_attrs
 
     return
-
-
-
-
-
-

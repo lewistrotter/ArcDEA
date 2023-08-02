@@ -23,11 +23,25 @@ BASELINE_BAND_ASSETS = {
     'SWIR 3':     'nbart_swir_3'
 }
 
-BASELINE_INDEX_ASSETS = {
-    'NDVI':  ['nbart_red', 'nbart_nir']  # TODO: landsat and sentinel differences needed
+GEOMED_COLLECTIONS = {
+    'Landsat 5 TM':   'ga_ls5t_nbart_gm_cyear_3',
+    'Landsat 7 ETM+': 'ga_ls7e_nbart_gm_cyear_3',
+    'Landsat 8 OLI':  'ga_ls8c_nbart_gm_cyear_3'
 }
 
-QUALITY_FLAGS = {
+GEOMED_BAND_ASSETS = {
+    'Blue':   'blue',
+    'Green':  'green',
+    'Red':    'red',
+    'NIR':    'nir',
+    'SWIR 1': 'swir1',
+    'SWIR 2': 'swir2',
+    'EMAD':   'edev',
+    'SMAD':   'sdev',
+    'BCMAD':  'bcdev'
+}
+
+QUALITY_FMASK_FLAGS = {
     'Valid':  1,
     'Cloud':  2,
     'Shadow': 3,
@@ -35,8 +49,3 @@ QUALITY_FLAGS = {
     'Water':  5
 }
 
-RASTER_EXTENSIONS = {
-    'TIFF':   '.tif',
-    'PNG':    '.png',
-    'NETCDF': '.nc'
-}

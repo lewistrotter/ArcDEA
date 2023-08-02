@@ -533,3 +533,48 @@
 #         shutil.rmtree(data_folder)
 #     except:
 #         arcpy.AddMessage('Could not delete NetCDFs data folder.')
+
+# old helpers
+# def convert_bbox_to_poly(
+#         bbox: tuple[float, float, float, float],
+#         epsg: int
+# ) -> arcpy.Polygon:
+#     """
+#
+#     :param bbox:
+#     :param epsg:
+#     :return:
+#     """
+#
+#     # TODO: metadata
+#
+#     w, s, e, n = bbox
+#
+#     vertices = [
+#         arcpy.Point(w, s),
+#         arcpy.Point(e, s),
+#         arcpy.Point(e, n),
+#         arcpy.Point(w, n),
+#         arcpy.Point(w, s)
+#     ]
+#
+#     arr = arcpy.Array(vertices)
+#
+#     srs = arcpy.SpatialReference(epsg)
+#     poly = arcpy.Polygon(arr, srs)
+#
+#     return poly
+#
+#
+# def convert_coords_to_poly(
+#         coords: list[float],
+#         epsg: int
+# ) -> arcpy.Polygon:
+#
+#     vertices = [arcpy.Point(c[0], c[1]) for c in coords]
+#     arr = arcpy.Array(vertices)
+#
+#     srs = arcpy.SpatialReference(epsg)
+#     poly = arcpy.Polygon(arr, srs)
+#
+#     return poly

@@ -15,6 +15,7 @@ def execute(
 
     from osgeo import gdal
 
+    from scripts import shared
     #from scripts import conversions
     #from scripts import web
 
@@ -26,16 +27,10 @@ def execute(
     # uncomment these when not testing
     in_nc = parameters[0].valueAsText
     out_folder = parameters[1].valueAsText
-    #in_frequency = parameters[2].value
-    #in_aggregator = parameters[3].value
-    #in_interpolate = parameters[4].value
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_2.nc'
-    # out_folder = r'C:\Users\Lewis\Desktop\arcdea\rasters'
-    # in_frequency = 'Monthly Ending'
-    # in_aggregator = 'Mean'
-    # in_interpolate = True
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
+    # out_folder = r"C:\Users\Lewis\Desktop\arcdea\data"
 
     # endregion
 
@@ -45,6 +40,7 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
+    # num_cpu = shared.detect_num_cores(modify_percent=0.95)  # TODO: set this via ui
 
     # endregion
 
@@ -59,11 +55,11 @@ def execute(
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
-        raise  # return
+        return
 
-    #if 'time' not in ds:
-        #arcpy.AddError('No time dimension detected in NetCDF.')
-        #raise  # return
+    if 'time' not in ds:
+        arcpy.AddError('No time dimension detected in NetCDF.')
+        return
 
     # TODO: check if nodata value exists
 
@@ -74,31 +70,20 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARE NETCDF DATA
-
-    #arcpy.SetProgressor('default', 'Preparing NetCDF data...')
-
-    #ds_attrs = ds.attrs
-    #ds_band_attrs = ds[list(ds)[0]].attrs
-    #ds_spatial_ref_attrs = ds['spatial_ref'].attrs
-
-    #ds = ds.where(ds != -999)
-
-    # TODO: others?
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region working
 
     arcpy.SetProgressor('default', 'Converting NetCDF to rasters...')
 
     tmp_folder = os.path.join(out_folder, 'tmp')
+
+    shared.drop_temp_folder(tmp_folder)
     if not os.path.exists(tmp_folder):
         os.mkdir(tmp_folder)
 
     # set up step-wise progressor
     arcpy.SetProgressor('step', None, 0, len(ds['time']))
+
+    # TODO: threading?
 
     try:
         for i in range(len(ds['time'])):
@@ -116,56 +101,40 @@ def execute(
 
                 dataset = gdal.Open(tmp_nc, gdal.GA_ReadOnly)
 
-                # options = gdal.TranslateOptions()
-
                 tmp_ras = os.path.join(tmp_folder, f'{var}.tif')
                 dataset = gdal.Translate(tmp_ras, dataset)
                 dataset = None
 
-                # append tif to bands list
                 tmp_bands.append(tmp_ras)
 
-            out_ras = os.path.join(out_folder, f'R{dt}.tif')
+            if 'platform' in list(da.coords):
+                code = str(da['platform'].values)
+                fn = f'R{dt}-{code}.tif'
+            else:
+                fn = f'R{dt}.tif'
+
+            out_ras = os.path.join(out_folder, fn)
             arcpy.management.CompositeBands(in_rasters=tmp_bands,
                                             out_raster=out_ras)
 
-            # increment progressor
             arcpy.SetProgressorPosition()
 
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
-        raise  # return
+        return
 
     # reset progressor
     arcpy.ResetProgressor()
 
     # endregion
 
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region EXPORT RESAMPLED NETCDF
-
-    #arcpy.SetProgressor('default', 'Exporting resampled NetCDF...')
-
-    #ds.to_netcdf(out_nc)
-    #ds.close()
-
-    # endregion
-
-
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region CLEAN UP ENVIRONMENT
 
-    try:
-        shutil.rmtree(tmp_folder)
+    arcpy.SetProgressor('default', 'Cleaning up environment...')
 
-    except:
-        arcpy.AddMessage('Could not delete temporary data folder.')
-
-    #arcpy.SetProgressor('default', 'Cleaning up environment...')
-
-    #arcpy.env.overwriteOutput = None  # TODO: make sure setting to none works
+    shared.drop_temp_folder(tmp_folder)
 
     # endregion
 

@@ -6,14 +6,14 @@ def execute(
     # region IMPORTS
 
     import os
-    import shutil
     import datetime
     import arcpy
 
     from concurrent.futures import ThreadPoolExecutor
     from concurrent.futures import as_completed
 
-    from scripts import conversions
+    from scripts import shared
+    from scripts import constants
     from scripts import web
 
     # endregion
@@ -39,9 +39,9 @@ def execute(
     # uncomment these when testing
     # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2022, 1, 1)
+    # in_start_date = datetime.datetime(2016, 1, 1)
     # in_end_date = datetime.datetime.now()
-    # in_collections = "'Sentinel 2A';'Sentinel 2A'"
+    # in_collections = "'Sentinel 2A';'Sentinel 2B'"
     # in_band_assets = "'Blue';'Green';'Red'"
     # in_quality_mask_algorithm = 'fMask'
     # in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
@@ -59,7 +59,12 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = 12  # TODO: set this via ui
+    num_cpu = shared.detect_num_cores(modify_percent=0.95)  # TODO: set this via ui
+
+    collections_map = constants.BASELINE_COLLECTIONS
+    assets_map = constants.BASELINE_BAND_ASSETS
+    quality_fmask_map = constants.QUALITY_FMASK_FLAGS
+    #quality_cloudless_map = constants.QUALITY_CLOUDLESS_FLAGS  # TODO: implement
 
     # endregion
 
@@ -68,22 +73,22 @@ def execute(
 
     arcpy.SetProgressor('default', 'Preparing DEA STAC query parameters...')
 
-    fc_bbox = conversions.get_bbox_from_featureclass(in_lyr)
-    fc_epsg = conversions.get_epsg_from_featureclass(in_lyr)
+    fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
+    fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
 
     start_date = in_start_date.date().strftime('%Y-%m-%d')
     end_date = in_end_date.date().strftime('%Y-%m-%d')
 
-    collections = conversions.multivalue_param_string_to_list(in_collections)
-    collections = conversions.get_collection_names_from_aliases(collections)
+    collections = shared.unpack_multivalue_param(in_collections)
+    collections = [collections_map[_] for _ in collections]
 
-    assets = conversions.multivalue_param_string_to_list(in_band_assets)
-    assets = conversions.get_asset_names_from_band_aliases(assets)
+    assets = shared.unpack_multivalue_param(in_band_assets)
+    assets = [assets_map[_] for _ in assets]
 
     # TODO: handle 2scloudless
 
-    quality_flags = conversions.multivalue_param_string_to_list(in_quality_flags)
-    quality_flags = conversions.get_quality_flag_names_from_aliases(quality_flags)
+    quality_flags = shared.unpack_multivalue_param(in_quality_flags)
+    quality_flags = [quality_fmask_map[_] for _ in quality_flags]
 
     out_nodata = in_nodata_value
 
@@ -91,7 +96,7 @@ def execute(
 
     out_res = in_res
     if out_epsg == 4326:
-        out_res *= 9.466833186042272E-06  # TODO: if epsg is lat,lon, use 9.466833186042272E-06 * 30
+        out_res *= 9.466833186042272E-06
 
     out_nc = out_nc
     out_extension = '.nc'
@@ -103,13 +108,18 @@ def execute(
 
     arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
 
-    # reproject stac bbox to wgs 1984, fetch all available stac items
-    stac_bbox = conversions.reproject_bbox(fc_bbox, fc_epsg, 4326)
-    stac_features = web.fetch_all_stac_features(collections,
-                                                start_date,
-                                                end_date,
-                                                stac_bbox,
-                                                100)
+    try:
+        # reproject stac bbox to wgs 1984, fetch all available stac items
+        stac_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, 4326)
+        stac_features = web.fetch_all_stac_features(collections,
+                                                    start_date,
+                                                    end_date,
+                                                    stac_bbox,
+                                                    100)
+    except Exception as e:
+        arcpy.AddError('Error occurred during DEA STAC query. See messages.')
+        arcpy.AddMessage(str(e))
+        return
 
     # abort if no stac features found
     if len(stac_features) == 0:
@@ -126,26 +136,25 @@ def execute(
     root_folder = os.path.dirname(out_nc)
     tmp_folder = os.path.join(root_folder, 'tmp')
 
-    try:
-        if os.path.exists(tmp_folder):
-            shutil.rmtree(tmp_folder)
-    except:
-        arcpy.AddMessage('Could not delete temporary folder.')
-        pass
-
+    shared.drop_temp_folder(tmp_folder)
     if not os.path.exists(tmp_folder):
         os.mkdir(tmp_folder)
 
-    # reproject output bbox to requested, convert stac features to downloads
-    out_bbox = conversions.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
-    downloads = web.convert_stac_features_to_downloads(stac_features,
-                                                       assets,
-                                                       out_bbox,
-                                                       out_epsg,
-                                                       out_res,
-                                                       out_nodata,
-                                                       tmp_folder,
-                                                       out_extension)
+    try:
+        # reproject output bbox to requested, convert stac features to downloads
+        out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
+        downloads = web.convert_stac_features_to_downloads(stac_features,
+                                                           assets,
+                                                           out_bbox,
+                                                           out_epsg,
+                                                           out_res,
+                                                           out_nodata,
+                                                           tmp_folder,
+                                                           out_extension)
+    except Exception as e:
+        arcpy.AddError('Error occurred during download creation. See messages.')
+        arcpy.AddMessage(str(e))
+        return
 
     downloads = web.group_downloads_by_solar_day(downloads)
 
@@ -162,25 +171,30 @@ def execute(
 
     arcpy.SetProgressor('step', 'Downloading...', 0, len(downloads), 1)
 
-    i = 0
-    results = []
-    with ThreadPoolExecutor(max_workers=num_cpu) as pool:
-        futures = []
-        for download in downloads:
-            task = pool.submit(web.validate_and_download,
-                               download,
-                               quality_flags,
-                               in_max_out_of_bounds,
-                               in_max_invalid_pixels)
+    try:
+        i = 0
+        with ThreadPoolExecutor(max_workers=num_cpu) as pool:
+            futures = []
+            for download in downloads:
+                task = pool.submit(web.validate_and_download,
+                                   download,
+                                   quality_flags,
+                                   in_max_out_of_bounds,
+                                   in_max_invalid_pixels)
 
-            futures.append(task)
+                futures.append(task)
 
-        for future in as_completed(futures):
-            arcpy.AddMessage(future.result())
+            for future in as_completed(futures):
+                arcpy.AddMessage(future.result())
 
-            i += 1
-            if i % 1 == 0:
-                arcpy.SetProgressorPosition(i)
+                i += 1
+                if i % 1 == 0:
+                    arcpy.SetProgressorPosition(i)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while downloading. See messages.')
+        arcpy.AddMessage(str(e))
+        return
 
     # endregion
 
@@ -189,7 +203,14 @@ def execute(
 
     arcpy.SetProgressor('default', 'Combining NetCDF files...')
 
-    web.combine_netcdf_files(tmp_folder, out_nc)
+    try:
+        web.combine_netcdf_files(folder=tmp_folder,
+                                 out_nc=out_nc)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while combining NetCDF files. See messages.')
+        arcpy.AddMessage(str(e))
+        return
 
     # endregion
 
@@ -198,13 +219,8 @@ def execute(
 
     arcpy.SetProgressor('default', 'Cleaning up environment...')
 
-    try:
-        if os.path.exists(tmp_folder):
-            shutil.rmtree(tmp_folder)
-    except:
-        arcpy.AddMessage('Could not delete temporary folder.')
-        pass
+    shared.drop_temp_folder(tmp_folder)
 
     # endregion
 
-#execute(None)
+# execute(None)

@@ -1,13 +1,28 @@
-﻿using ArcGIS.Desktop.Core.Geoprocessing;
+﻿using ArcGIS.Core.CIM;
+using ArcGIS.Core.Data;
+using ArcGIS.Core.Geometry;
+using ArcGIS.Desktop.Catalog;
+using ArcGIS.Desktop.Core;
+using ArcGIS.Desktop.Core.Geoprocessing;
+using ArcGIS.Desktop.Editing;
+using ArcGIS.Desktop.Extensions;
+using ArcGIS.Desktop.Framework;
 using ArcGIS.Desktop.Framework.Contracts;
 using ArcGIS.Desktop.Framework.Dialogs;
+using ArcGIS.Desktop.Framework.Threading.Tasks;
+using ArcGIS.Desktop.Layouts;
+using ArcGIS.Desktop.Mapping;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
 
 namespace ArcDEA
 {
-    internal class FetchBaselineGallery : Gallery
+    internal class FetchGeomedGallery : Gallery
     {
         private bool _isInitialized;
 
@@ -23,14 +38,9 @@ namespace ArcDEA
                 return;
 
             // Create Landsat 5, 7, 8, 9 Collection 3 gallery item
-            Add(new GalleryItem(text: "Landsat Baseline Collection 3", 
-                                icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null, 
-                                tooltip: "Landsat 5, 7, 8, 9 Analysis Ready Data."));
-
-            // Create Sentinel 2A, 2B Collection 3 gallery item
-            Add(new GalleryItem(text:"Sentinel 2 Baseline Collection 3", 
+            Add(new GalleryItem(text: "Landsat Geomedian Collection 3",
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
-                                tooltip: "Sentinel 2A, 2B Analysis Ready Data."));
+                                tooltip: "Landsat 5, 7, 8, 9 Analysis Ready Data."));
 
             _isInitialized = true;
         }
@@ -39,15 +49,11 @@ namespace ArcDEA
         {
             string toolname = null;
 
-            if (item.Text == "Landsat Baseline Collection 3")
+            if (item.Text == "Landsat Geomedian Collection 3")
             {
-                toolname = "ArcDEA.FetchLandsatBaselineData";
+                toolname = "ArcDEA.FetchLandsatGeomedData";
             }
-            else if (item.Text == "Sentinel 2 Baseline Collection 3")
-            {
-                toolname = "ArcDEA.FetchSentinel2BaselineData";
-            }
-            
+
             try
             {
                 Geoprocessing.OpenToolDialog(toolname, null);
