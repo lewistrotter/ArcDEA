@@ -40,7 +40,7 @@ def execute(
     # in_start_year = 1990
     # in_end_year = 2020
     # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI'"
-    # in_band_assets = "'Blue';'Green';'Red'"
+    # in_band_assets = "'Blue';'Green';'Red';'SMAD'"
     # in_include_slc_off_data = False
     # in_nodata_value = -999
     # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
@@ -235,4 +235,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+# execute(None)

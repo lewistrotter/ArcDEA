@@ -281,7 +281,7 @@ class Download:
             self,
     ) -> None:
 
-        out_dtype = gdal.GDT_Int16  # TODO: set to float32 if float has been used as nodata?
+        out_dtype = gdal.GDT_Float32  # TODO: needed for sdev, etc
 
         options = gdal.TranslateOptions(xRes=self.out_res,
                                         yRes=self.out_res,
@@ -711,12 +711,13 @@ def rename_bands_in_netcdf_files(
     try:
         for file in files:
             ds = xr.open_dataset(file)
+            ds = ds.load()
+            ds.close()
 
-            vars = list(ds)
-            for v in vars:
+            data_vars = list(ds)
+            for v in data_vars:
                 ds = ds.rename({v: rename_map[v]})
 
-            ds.close()
             ds.to_netcdf(file)
     except:
         arcpy.AddMessage('NetCDF file could not be renamed.')

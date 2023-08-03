@@ -29,8 +29,8 @@ def execute(
     out_folder = parameters[1].valueAsText
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
-    # out_folder = r"C:\Users\Lewis\Desktop\arcdea\data"
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\gmed.nc'
+    # out_folder = r'C:\Users\Lewis\Desktop\arcdea\data'
 
     # endregion
 
@@ -138,4 +138,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+# execute(None)
