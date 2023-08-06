@@ -202,6 +202,7 @@ def execute(
                 ds[var] = ds[var].interpolate_na('time')
 
                 # increment counter
+                i += 1
                 arcpy.SetProgressorPosition(i)
 
         except Exception as e:
