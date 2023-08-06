@@ -9,7 +9,7 @@ It provides:
 * ArcGIS toolbox compatible with model builder.
 
 ## Screenshot
-![Screenshot of ArcDEA](ArcDEA/Screenshots/ArcDEA_alpha_screenshot_v0005.png?raw=true "Screenshot of ArcDEA")
+![Screenshot of ArcDEA](ArcDEA/Screenshots/ArcDEA_alpha_screenshot_v0008.png?raw=true "Screenshot of ArcDEA")
 
 ## Requirements
 * ArcGIS Pro version 3.0 or above.
