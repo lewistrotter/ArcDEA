@@ -4,8 +4,7 @@ def execute(
 ):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
-
-    import datetime
+    import numpy as np
     import xarray as xr
     import arcpy
 
@@ -17,15 +16,13 @@ def execute(
     # uncomment these when not testing
     in_nc = parameters[0].valueAsText
     out_nc = parameters[1].valueAsText
-    in_group = parameters[2].value
-    in_aggregator = parameters[3].value
-    in_interpolate = parameters[4].value
+    in_spike_cutoff = parameters[2].value
+    in_interpolate = parameters[3].value
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\s2.nc'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\data\s2_grp.nc'
-    # in_group = 'Season'  #  'Year'  # 'Month'
-    # in_aggregator = 'Mean'
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls.nc'
+    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls_out.nc'
+    # in_spike_cutoff = 2
     # in_interpolate = True
 
     # endregion
@@ -45,9 +42,8 @@ def execute(
     arcpy.SetProgressor('default', 'Reading and checking NetCDF data...')
 
     try:
-        # load netcdf  # TODO: memory?
-        with xr.open_dataset(in_nc) as ds:
-            ds.load()
+        # load netcdf  # TODO: memory?  # TODO: load later?
+        ds = xr.open_dataset(in_nc)
 
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
@@ -80,110 +76,85 @@ def execute(
     ds_band_attrs = ds[list(ds)[0]].attrs
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
-    # convert nodata to null
-    ds = ds.where(ds != nodata)
-
-    # get start, end years
-    #s_year = int(ds['time.year'].isel(time=0))
-    e_year = int(ds['time.year'].isel(time=-1))
-
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region GROUP NETCDF TIMESERIES
+    # region REMOVE OUTLIERS
 
-    arcpy.SetProgressor('default', 'Grouping NetCDF temporal frequency...')
+    arcpy.SetProgressor('default', 'Removing outliers...')
 
-    # create group map
-    # https://docs.xarray.dev/en/stable/generated/xarray.DataArray.groupby.html
-    group_map = {
-        #'Day': 'time.day',
-        #'Day of Week': 'time.dayofweek',
-        #'Day of Year': 'time.dayofyear',
-        #'Week': 'time.week',
-        #'Week of Year': 'time.weekofyear',
-        'Month': 'time.month',
-        'Quarter': 'time.quarter',
-        'Season': 'time.season',
-        'Year': 'time.year',
-    }
-
-    # extract group based on user input, error if not found
-    group = group_map.get(in_group)
-    if group is None:
-        arcpy.AddError('Could not find group.')
+    # check if spike cutoff is valid
+    if in_spike_cutoff <= 0:
+        arcpy.AddError('Spike cutoff must be > 0.')
         return
+
+    # calc num of dates per year
+    num_dates = len(ds['time'])
+    num_years = len(np.unique(ds['time.year']))
+    num_dates_per_year = num_dates / num_years
+
+    # calculate window size
+    win_cen = int(np.floor(num_dates_per_year / 7))
+
+    # initialise progress bar
+    arcpy.SetProgressor('step', None, 0, len(ds), 1)
 
     try:
-        # perform groupby
-        ds = ds.groupby(group)
+        i = 0
+        for var in ds:
+            # notify user
+            arcpy.AddMessage(f'Removing outliers for band: {var}...')
+
+            # extract current var as array and set nodata to nan
+            da = ds[var]
+            da = da.where(da != -999)
+
+            # get std of entire ts vector and multi by user factor
+            da_cut = da.std('time', skipna=True)  # FIXME: this is causing a runtimewarning
+            da_cut = da_cut * in_spike_cutoff
+
+            # append first/last values to array to pad edges
+            da_ext = xr.concat([da[-win_cen:], da, da[:win_cen]], dim='time')
+
+            # generate windows of same size
+            da_win = da_ext.rolling(time=2 * win_cen + 1, center=True)
+            da_win = da_win.construct('win')
+
+            # xr rolling pads a few wins at start/end with nans, remove them
+            da_win = da_win[win_cen:-win_cen]
+
+            # get center win values (same as da) and minus win median
+            da_med = np.abs(da - da_win.median('win', skipna=True))  # TODO: this is slow
+
+            # get mean, max of win l, r vals and +/- cutoff, dont remove nans like timesat
+            lr = [win_cen - 1, win_cen + 1]
+            da_avg = da_win[:, :, :, lr].mean('win', skipna=True) - da_cut
+            da_max = da_win[:, :, :, lr].max('win', skipna=True) + da_cut
+
+            # get idxs where med > std dev and cen (same as da) neighbors < avg or > max
+            da_err = (da_med >= da_cut) & ((da < da_avg) | (da > da_max))
+
+            # mask error indicies as nan
+            da = da.where(~da_err)
+
+            # update in dataset
+            ds[var] = da
+
+            # increment counter
+            arcpy.SetProgressorPosition(i)
 
     except Exception as e:
-        arcpy.AddError('Error occurred when resampling NetCDF. Check messages.')
+        arcpy.AddError('Error occurred when removing outliers in NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
         return
+
+    # TODO: set all values to nan per pixel where any band has nan
+    # TODO: ...
+
+    # reset progressor
+    arcpy.ResetProgressor()
 
     # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region AGGREGATE NETCDF VALUES
-
-    arcpy.SetProgressor('default', 'Aggregating NetCDF values...')
-
-    try:
-        # apply user aggregator to resampled netcdf
-        if in_aggregator == 'Minimum':
-            ds = ds.min('time')
-        elif in_aggregator == 'Maximum':
-            ds = ds.max('time')
-        elif in_aggregator == 'Mean':
-            ds = ds.mean('time')
-        elif in_aggregator == 'Median':
-            ds = ds.median('time')
-        elif in_aggregator == 'Standard Deviation':
-            ds = ds.std('time')
-        else:
-            arcpy.AddError('Could not find aggregator.')
-            return
-
-    except Exception as e:
-        arcpy.AddError('Error occurred when aggregating NetCDF. Check messages.')
-        arcpy.AddMessage(str(e))
-        return
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CORRECT DATETIME VALUES
-
-    arcpy.SetProgressor('default', 'Correcting NetCDF datetime values...')
-
-    # get time dim label from dataset
-    lbl = group.split('.')[1]
-
-    try:
-        if lbl == 'dayofyear':
-            raise NotImplemented('Day of year not yet implemented.')  # TODO: implement
-        elif lbl == 'week':
-            raise NotImplemented('Week not yet implemented.')  # TODO: implement
-        elif lbl == 'month':
-            ds[lbl] = [datetime.datetime(e_year, m, 1) for m in ds[lbl].values]
-        elif lbl == 'quarter':
-            qs = {1: 1, 2: 4, 3: 7, 4: 10}
-            ds[lbl] = [datetime.datetime(e_year, qs[q], 1) for q in ds[lbl].values]
-        elif lbl == 'season':
-            ss = {'DJF': 1, 'MAM': 4, 'JJA': 7, 'SON': 10}
-            ds[lbl] = [datetime.datetime(e_year, ss[s], 1) for s in ds[lbl].values]
-        elif lbl == 'year':
-            ds[lbl] = [datetime.datetime(y, 1, 1) for y in ds[lbl].values]
-
-        # rename grouped time label to time and sort by time
-        ds = ds.rename({lbl: 'time'}).sortby('time')
-
-    except Exception as e:
-        arcpy.AddError('Error occurred when correcting dates in NetCDF. Check messages.')
-        arcpy.AddMessage(str(e))
-        return
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region INTERPOLATE NETCDF IF REQUESTED
@@ -263,4 +234,5 @@ def execute(
 
     # endregion
 
+# testing
 #execute(None)

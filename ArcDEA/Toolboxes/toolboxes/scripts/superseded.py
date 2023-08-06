@@ -578,3 +578,61 @@
 #     poly = arcpy.Polygon(arr, srs)
 #
 #     return poly
+
+# moving filter median, numpy ver
+# def moving_median_filter(arr, win_cen, spike_cutoff):
+#     # get std of entire ts vector and multi by user factor
+#     std = np.nanstd(arr)
+#     cut = spike_cutoff * std
+#
+#     # append first/last values to array to ensure all values assessed
+#     ext = np.concatenate([arr[-win_cen:], arr, arr[:win_cen]])
+#
+#     # generate windows of same size
+#     wins = swv(ext, 2 * win_cen + 1)
+#
+#     # get center win value and minus median of whole window
+#     meds = np.abs(wins[:, win_cen] - np.nanmedian(wins, 1))
+#
+#     # get mean, max of win l, r vals and minus cutoff, include nans to match timesat
+#     avgs = np.mean(wins[:, [win_cen - 1, win_cen + 1]], 1) - cut
+#     maxs = np.max(wins[:, [win_cen - 1, win_cen + 1]], 1) + cut
+#
+#     # get indices where median above std dev and immediates < average or > max value
+#     errs = (meds >= cut) & ((wins[:, win_cen] < avgs) | (wins[:, win_cen] > maxs))
+#
+#     # mask error indicies as nan
+#     arr[errs] = np.nan
+#
+#     return arr
+#
+#
+# vec = ds_np.data.copy()
+# arr = vec.copy()
+# arr = moving_median_filter(arr, win_cen, spike_cutoff)
+#
+# plt.figure(figsize=[15, 10])
+# plt.plot(vec, marker='o', color='blue')
+# plt.plot(arr, marker='o', color='red')
+# plt.show()
+
+# old zscore
+# for var in ds:
+#     da = ds[var]
+#     da = da.where(da != -999)
+#
+#     l, r = slice(-win_cen, None), slice(0, win_cen)
+#     da_ext = xr.concat([da.isel(time=l), da, da.isel(time=r)], 'time')
+#
+#     da_roll = da_ext.rolling(time=2 * win_cen + 1, center=True)
+#     da_roll = da_roll.construct('win')
+#
+#     m = da_roll.mean('win', skipna=True)#.shift(time=1)
+#     s = da_roll.std('win', ddof=0, skipna=True)#.shift(time=1)
+#
+#     z = np.abs((da_ext - m) / s)
+#     z = z.isel(time=slice(win_cen, -win_cen))
+#
+#     z = z > 1.58
+#
+#     ds[var] = da.where(~z)  # 3.29

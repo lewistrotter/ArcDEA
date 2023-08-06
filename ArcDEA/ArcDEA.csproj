@@ -19,6 +19,7 @@
     <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\group_data.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <None Remove="Toolboxes\toolboxes\scripts\constants.py" />
     <None Remove="Toolboxes\toolboxes\scripts\indices.py" />
@@ -40,6 +41,7 @@
     <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\group_data.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <Content Include="Toolboxes\toolboxes\scripts\constants.py" />
     <Content Include="Toolboxes\toolboxes\scripts\indices.py" />

@@ -154,9 +154,27 @@ def execute(
 
     arcpy.SetProgressor('default', 'Interpolating missing NetCDF values...')
 
-    # interpolate if user requested
     if in_interpolate:
-        ds = ds.interpolate_na('time')
+
+        # initialise progress bar
+        arcpy.SetProgressor('step', None, 0, len(ds), 1)
+
+        try:
+            i = 0
+            for var in ds:
+                # interpolate variable
+                ds[var] = ds[var].interpolate_na('time')
+
+                # increment counter
+                arcpy.SetProgressorPosition(i)
+
+        except Exception as e:
+            arcpy.AddError('Error occurred when interpolating. Check messages.')
+            arcpy.AddMessage(str(e))
+            return
+
+    # reset progressor
+    arcpy.ResetProgressor()
 
     # endregion
 
