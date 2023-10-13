@@ -136,6 +136,8 @@ def execute(
             ds = ds.mean('time')
         elif in_aggregator == 'Median':
             ds = ds.median('time')
+        elif in_aggregator == 'Sum':
+            ds = ds.sum('time')
         elif in_aggregator == 'Standard Deviation':
             ds = ds.std('time')
         else:
