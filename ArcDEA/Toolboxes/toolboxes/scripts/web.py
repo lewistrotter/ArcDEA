@@ -58,8 +58,8 @@ class Download:
         self.out_nodata = out_nodata
         self.out_path = out_path
         self.out_extension = out_extension
-        self._mask_dataset = None
-        self._band_dataset = None
+        self._mask_dataset = None  # TODO: add to wc mon
+        self._band_dataset = None  # TODO: add to wc mon
 
     def __repr__(
             self
