@@ -22,34 +22,34 @@ def execute(
     # region EXTRACT PARAMETERS
 
     # uncomment these when not testing
-    in_lyr = parameters[0].valueAsText
-    out_nc = parameters[1].valueAsText
-    in_start_date = parameters[2].value
-    in_end_date = parameters[3].value
-    in_collections = parameters[4].valueAsText
-    in_band_assets = parameters[5].valueAsText
-    in_include_slc_off_data = parameters[6].value
-    in_quality_flags = parameters[7].valueAsText
-    in_max_out_of_bounds = parameters[8].value
-    in_max_invalid_pixels = parameters[9].value
-    in_nodata_value = parameters[10].value
-    in_srs = parameters[11].value
-    in_res = parameters[12].value
+    # in_lyr = parameters[0].valueAsText
+    # out_nc = parameters[1].valueAsText
+    # in_start_date = parameters[2].value
+    # in_end_date = parameters[3].value
+    # in_collections = parameters[4].valueAsText
+    # in_band_assets = parameters[5].valueAsText
+    # in_include_slc_off_data = parameters[6].value
+    # in_quality_flags = parameters[7].valueAsText
+    # in_max_out_of_bounds = parameters[8].value
+    # in_max_invalid_pixels = parameters[9].value
+    # in_nodata_value = parameters[10].value
+    # in_srs = parameters[11].value
+    # in_res = parameters[12].value
 
     # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
-    # in_start_date = datetime.datetime(1990, 1, 1)
-    # in_end_date = datetime.datetime.now()
-    # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI';'Landsat 9 OLI-2'"
-    # in_band_assets = "'Blue';'Green';'Red';'NIR'"
-    # in_include_slc_off_data = False
-    # in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
-    # in_max_out_of_bounds = 10
-    # in_max_invalid_pixels = 5
-    # in_nodata_value = -999
-    # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
-    # in_res = 30
+    in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
+    out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
+    in_start_date = datetime.datetime(2010, 1, 1)
+    in_end_date = datetime.datetime.now()
+    in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI';'Landsat 9 OLI-2'"
+    in_band_assets = "'Blue';'Green';'Red';'NIR'"
+    in_include_slc_off_data = False
+    in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
+    in_max_out_of_bounds = 10
+    in_max_invalid_pixels = 5
+    in_nodata_value = -999
+    in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
+    in_res = 30
 
     # endregion
 
@@ -171,6 +171,9 @@ def execute(
 
     arcpy.SetProgressor('step', 'Downloading...', 0, len(downloads), 1)
 
+    # TODO: temp
+    #num_cpu = 1
+
     try:
         i = 0
         with ThreadPoolExecutor(max_workers=num_cpu) as pool:
@@ -223,4 +226,4 @@ def execute(
 
     # endregion
 
-# execute(None)
+execute(None)
