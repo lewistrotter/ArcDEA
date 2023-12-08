@@ -41,6 +41,11 @@ GEOMED_BAND_ASSETS = {
     'BCMAD':  'bcdev'
 }
 
+MASK_BAND_ASSETS = {
+    'fMask': 'oa_fmask',
+    'S2Cloudless': 'oa_s2cloudless_mask'
+}
+
 QUALITY_FMASK_FLAGS = {
     'Valid':  1,
     'Cloud':  2,
@@ -49,3 +54,7 @@ QUALITY_FMASK_FLAGS = {
     'Water':  5
 }
 
+QUALITY_S2CLOUDLESS_FLAGS = {
+    'Valid': 1,
+    'Invalid': 2
+}

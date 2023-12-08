@@ -1,3 +1,4 @@
+
 def execute(
         parameters
 ):
@@ -14,6 +15,8 @@ def execute(
     from scripts import stac
     from scripts import cube
     from scripts import shared
+    #from scripts import web
+    #from scripts import web2
 
     # endregion
 
@@ -21,38 +24,38 @@ def execute(
     # region EXTRACT PARAMETERS
 
     # uncomment these when not testing
-    in_lyr = parameters[0].valueAsText
-    out_nc = parameters[1].valueAsText
-    in_start_date = parameters[2].value
-    in_end_date = parameters[3].value
-    in_collections = parameters[4].valueAsText
-    in_band_assets = parameters[5].valueAsText
-    in_mask_algorithm = parameters[6].value
-    in_quality_flags = parameters[7].valueAsText
-    in_max_out_of_bounds = parameters[8].value
-    in_max_invalid_pixels = parameters[9].value
-    in_keep_mask = parameters[10].value
-    in_nodata_value = parameters[11].value
-    in_srs = parameters[12].value
-    in_res = parameters[13].value
-    in_max_threads = parameters[14].value
+    # in_lyr = parameters[0].valueAsText
+    # out_nc = parameters[1].valueAsText
+    # in_start_date = parameters[2].value
+    # in_end_date = parameters[3].value
+    # in_collections = parameters[4].valueAsText
+    # in_band_assets = parameters[5].valueAsText
+    # in_quality_mask_algorithm = parameters[6].value
+    # in_quality_flags = parameters[7].valueAsText
+    # in_max_out_of_bounds = parameters[8].value
+    # in_max_invalid_pixels = parameters[9].value
+    # in_keep_mask = parameters[10].value   # TODO: implement
+    # in_nodata_value = parameters[10].value
+    # in_srs = parameters[11].value
+    # in_res = parameters[12].value
+    # in_max_threads = parameters[13].value  # TODO: implement
 
     # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\perth_sa.shp'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2023, 1, 1)
-    # in_end_date = datetime.datetime.now()
-    # in_collections = "'Sentinel 2A';'Sentinel 2B'"
-    # in_band_assets = "'Blue';'Green';'Red'"
-    # in_mask_algorithm = 'S2Cloudless' #'fMask'  # 'S2Cloudless'
-    # in_quality_flags = "Valid"  #"'Valid';'Shadow';'Snow';'Water'"  # "Valid"
-    # in_max_out_of_bounds = 10
-    # in_max_invalid_pixels = 5
-    # in_keep_mask = False
-    # in_nodata_value = -999
-    # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
-    # in_res = 10
-    # in_max_threads = None
+    in_lyr = r'C:\Users\Lewis\Desktop\arcdea\perth_sa.shp'
+    out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
+    in_start_date = datetime.datetime(2018, 1, 1)
+    in_end_date = datetime.datetime.now()
+    in_collections = "'Sentinel 2A';'Sentinel 2B'"
+    in_band_assets = "'Blue';'Green';'Red'"
+    in_mask_algorithm = 'S2Cloudless' #'fMask'  # 'S2Cloudless'
+    in_quality_flags = "Valid"  #"'Valid';'Shadow';'Snow';'Water'"  # "Valid"
+    in_max_out_of_bounds = 10
+    in_max_invalid_pixels = 5
+    in_keep_mask = False
+    in_nodata_value = -999
+    in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
+    in_res = 10
+    in_max_threads = 14
 
     # endregion
 
@@ -67,7 +70,7 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARE PARAMETERS
+    # region PREPARE QUERY PARAMETERS
 
     arcpy.SetProgressor('default', 'Preparing DEA STAC query parameters...')
 
@@ -100,9 +103,6 @@ def execute(
     # set output dtype (always int16 for baseline)
     out_dtype = 'int16'
 
-    # validate num threads, if none will use num of cores - 1
-    max_threads = shared.prepare_max_threads(in_max_threads)
-
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -133,7 +133,7 @@ def execute(
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region PREPARING STAC FEATURES
 
-    arcpy.SetProgressor('default', 'Preparing STAC downloads...')
+    arcpy.SetProgressor('default', 'Preparing downloads...')
 
     root_folder = os.path.dirname(out_nc)
     tmp_folder = os.path.join(root_folder, 'tmp')
@@ -158,7 +158,7 @@ def execute(
                                                                    tmp_folder)
 
     except Exception as e:
-        arcpy.AddError('Error occurred during STAC download preparation. See messages.')
+        arcpy.AddError('Error occurred during download creation. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -173,11 +173,11 @@ def execute(
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region DOWNLOAD WCS MASK DATA
 
-    arcpy.SetProgressor('step', 'Downloading and validating mask data...', 0, len(stac_downloads), 1)
+    arcpy.SetProgressor('step', 'Downloading mask data...', 0, len(stac_downloads), 1)
 
     try:
         i = 0
-        with ThreadPoolExecutor(max_workers=max_threads) as pool:
+        with ThreadPoolExecutor(max_workers=in_max_threads) as pool:
             futures = []
             for stac_download in stac_downloads:
                 task = pool.submit(cube.worker_read_mask_and_validate, stac_download)
@@ -191,7 +191,7 @@ def execute(
                     arcpy.SetProgressorPosition(i)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while downloading and validating mask data. See messages.')
+        arcpy.AddError('Error occurred while downloading mask data. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -212,7 +212,7 @@ def execute(
 
     try:
         i = 0
-        with ThreadPoolExecutor(max_workers=max_threads) as pool:
+        with ThreadPoolExecutor(max_workers=in_max_threads) as pool:
             futures = []
             for download in stac_downloads:
                 task = pool.submit(cube.worker_read_bands_and_export, download)
@@ -235,53 +235,52 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN AND COMBINE NETCDFS
+    # region CLEAN NETCDF METADATA AND COMBINING FILES
 
-    arcpy.SetProgressor('default', 'Cleaning and combining NetCDFs...')
+    arcpy.SetProgressor('default', 'Cleaning and combining NetCDF files...')
 
     try:
         ds = cube.fix_xr_meta_and_combine(stac_downloads)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while cleaning and combining NetCDFs. See messages.')
+        arcpy.AddError('Error occurred while cleaning NetCDF files. See messages.')
         arcpy.AddMessage(str(e))
         return
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region MASK OUT INVALID NETCDF PIXELS
+    # region MASK INVALID PIXELS IN NETCDF
 
-    arcpy.SetProgressor('default', 'Masking out invalid NetCDF pixels...')
+    arcpy.SetProgressor('default', 'Masking invalid NetCDF pixels...')
 
     try:
         ds = cube.apply_xr_mask(ds,
                                 quality_flags,
                                 out_nodata,
-                                in_keep_mask)
+                                in_keep_mask)  # TODO: rename
 
     except Exception as e:
-        arcpy.AddError('Error occurred while masking out invalid NetCDF pixels. See messages.')
+        arcpy.AddError('Error occurred while masking NetCDF file. See messages.')
         arcpy.AddMessage(str(e))
         return
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region EXPORT COMBINED NETCDF
+    # region EXPORT FINAL NETCDF
 
-    arcpy.SetProgressor('default', 'Exporting combined NetCDF...')
+    arcpy.SetProgressor('default', 'Exporting final NetCDF...')
 
     try:
         cube.export_xr_to_nc(ds, out_nc)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while exporting combined NetCDF. See messages.')
+        arcpy.AddError('Error occurred while exporting NetCDF file. See messages.')
         arcpy.AddMessage(str(e))
         return
 
     # endregion
-
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region CLEAN UP ENVIRONMENT
 
@@ -292,4 +291,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+execute(None)

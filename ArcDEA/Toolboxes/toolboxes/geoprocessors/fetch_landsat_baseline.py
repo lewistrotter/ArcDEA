@@ -10,7 +10,6 @@ def execute(
     import arcpy
 
     from concurrent.futures import ThreadPoolExecutor
-    from concurrent.futures import as_completed
 
     from scripts import shared
     from scripts import constants
@@ -39,7 +38,7 @@ def execute(
     # uncomment these when testing
     # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
-    # in_start_date = datetime.datetime(2010, 1, 1)
+    # in_start_date = datetime.datetime(1990, 1, 1)
     # in_end_date = datetime.datetime.now()
     # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI';'Landsat 9 OLI-2'"
     # in_band_assets = "'Blue';'Green';'Red';'NIR'"
@@ -59,7 +58,7 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = shared.detect_num_cores(modify_percent=0.95)  # TODO: set this via ui
+    num_cpu = shared.detect_num_cores(modify_percent=0.90)  # TODO: set this via ui
 
     collections_map = constants.BASELINE_COLLECTIONS
     assets_map = constants.BASELINE_BAND_ASSETS
@@ -75,8 +74,8 @@ def execute(
     fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
     fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
 
-    start_date = in_start_date.date().strftime('%Y-%m-%d')
-    end_date = in_end_date.date().strftime('%Y-%m-%d')
+    start_date = in_start_date.datetime().strftime('%Y-%m-%d')
+    end_date = in_end_date.datetime().strftime('%Y-%m-%d')
 
     collections = shared.unpack_multivalue_param(in_collections)
     collections = [collections_map[_] for _ in collections]
@@ -138,10 +137,17 @@ def execute(
         os.mkdir(tmp_folder)
 
     try:
+        # create mask info
+        mask = web.Mask('fmask',
+                        quality_flags,
+                        in_max_out_of_bounds,
+                        in_max_invalid_pixels)
+
         # reproject output bbox to requested, convert stac features to downloads
         out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
         downloads = web.convert_stac_features_to_downloads(stac_features,
                                                            assets,
+                                                           mask,
                                                            out_bbox,
                                                            out_epsg,
                                                            out_res,
@@ -154,8 +160,6 @@ def execute(
         return
 
     downloads = web.group_downloads_by_solar_day(downloads)
-
-    # TODO: dataset maturity
 
     if in_include_slc_off_data is False:
         downloads = web.remove_slc_off(downloads)
@@ -171,24 +175,11 @@ def execute(
 
     arcpy.SetProgressor('step', 'Downloading...', 0, len(downloads), 1)
 
-    # TODO: temp
-    #num_cpu = 1
-
     try:
         i = 0
         with ThreadPoolExecutor(max_workers=num_cpu) as pool:
-            futures = []
-            for download in downloads:
-                task = pool.submit(web.validate_and_download,
-                                   download,
-                                   quality_flags,
-                                   in_max_out_of_bounds,
-                                   in_max_invalid_pixels)
-
-                futures.append(task)
-
-            for future in as_completed(futures):
-                arcpy.AddMessage(future.result())
+            for result in pool.map(web.validate_and_download, downloads):
+                arcpy.AddMessage(result)
 
                 i += 1
                 if i % 1 == 0:
@@ -207,7 +198,7 @@ def execute(
     arcpy.SetProgressor('default', 'Combining NetCDF files...')
 
     try:
-        web.combine_netcdf_files(folder=tmp_folder,
+        web.combine_ncs_via_dask(folder=tmp_folder,
                                  out_nc=out_nc)
 
     except Exception as e:

@@ -12,10 +12,40 @@ from typing import Union
 from osgeo import gdal
 
 gdal.SetConfigOption('GDAL_HTTP_UNSAFESSL', 'YES')
-gdal.SetConfigOption('CPL_VSIL_CURL_ALLOWED_EXTENSIONS', 'tif')
+gdal.SetConfigOption('CPL_VSIL_CURL_ALLOWED_EXTENSIONS', '.tif')
 gdal.SetConfigOption('GDAL_HTTP_MULTIRANGE', 'YES')
 gdal.SetConfigOption('GDAL_HTTP_MERGE_CONSECUTIVE_RANGES', 'YES')
 gdal.SetConfigOption('GDAL_HTTP_CONNECTTIMEOUT', '30')
+
+class Mask:
+    def __init__(
+            self,
+            algorithm: str,
+            quality_flags: list,
+            max_out_of_bounds: int,
+            max_invalid_pixels: int
+
+    ) -> None:
+        """
+
+        :param algorithm:
+        :param quality_flags:
+        :param max_invalid_pixels:
+        :param max_out_of_bounds:
+        """
+
+        self.algorithm = algorithm
+        self.quality_flags = quality_flags
+        self.max_out_of_bounds = max_out_of_bounds
+        self.max_invalid_pixels = max_invalid_pixels
+
+    def __repr__(
+            self
+    ) -> str:
+        return '{}({!r})'.format(self.__class__.__name__, self.__dict__)
+
+
+
 
 
 class Download:
@@ -25,6 +55,7 @@ class Download:
             collection: str,
             assets: list[str],
             coordinates: list[float],
+            mask: Union[Mask, None],
             out_bbox: tuple[float, float, float, float],
             out_epsg: int,
             out_res: float,
@@ -52,14 +83,15 @@ class Download:
         self.collection = collection
         self.assets = assets
         self.coordinates = coordinates
+        self.mask = mask
         self.out_bbox = out_bbox
         self.out_epsg = out_epsg
         self.out_res = out_res
         self.out_nodata = out_nodata
         self.out_path = out_path
         self.out_extension = out_extension
-        self._mask_dataset = None  # TODO: add to wc mon
-        self._band_dataset = None  # TODO: add to wc mon
+        self._mask_dataset = None
+        self._band_dataset = None
 
     def __repr__(
             self
@@ -123,11 +155,20 @@ class Download:
     def build_mask_wcs_url(
             self
     ) -> str:
+        """
 
-        # TODO: meta
+        :return:
+        """
+
+        if self.mask.algorithm == 'fmask':
+            mask_band = 'oa_fmask'
+        elif self.mask.algorithm == 's2cloudless':
+            mask_band = 'oa_s2cloudless_mask'
+        else:
+            raise NotImplemented('Mask doesnt exist.')
 
         url = build_wcs_url(self.collection,
-                            'oa_fmask',
+                            mask_band,
                             self.date,
                             self.out_bbox,
                             self.out_epsg,
@@ -149,7 +190,6 @@ class Download:
 
         return url
 
-    # TODO: add to wcmon
     def build_mask_tif_filepath(
             self
     ) -> str:
@@ -161,7 +201,6 @@ class Download:
 
         return fp
 
-    # TODO: add to wcmon
     def build_band_tif_filepath(
             self
     ) -> str:
@@ -197,13 +236,16 @@ class Download:
 
         try:
             url = self.build_mask_wcs_url()
-            data = requests.get(url)  # TODO: add to wc mon
 
-            out_fp = self.build_mask_tif_filepath()  # TODO: add to wc mon
-            with open(out_fp, 'wb') as f:
-                f.write(data.content)
+            # TODO: inefficient - throttles cpu
+            #data = requests.get(url)
+            #out_fp = self.build_mask_tif_filepath()
+            #with open(out_fp, 'wb') as f:
+                #f.write(data.content)
+            #self._mask_dataset = gdal.Open(out_fp, gdal.GA_ReadOnly)
 
-            self._mask_dataset = gdal.Open(out_fp, gdal.GA_ReadOnly)
+            self._mask_dataset = gdal.Open(url, gdal.GA_ReadOnly)
+
         except Exception as e:
             raise e
 
@@ -217,21 +259,21 @@ class Download:
 
         try:
             url = self.build_band_wcs_url()
-            data = requests.get(url)  # TODO: add to wc mon
 
-            out_fp = self.build_band_tif_filepath()  # TODO: add to wc mon
-            with open(out_fp, 'wb') as f:
-                f.write(data.content)
+            # TODO: inefficient - throttles cpu
+            #data = requests.get(url)
+            #out_fp = self.build_band_tif_filepath()
+            #with open(out_fp, 'wb') as f:
+                #f.write(data.content)
+            #self._band_dataset = gdal.Open(out_fp, gdal.GA_Update)
 
-            self._band_dataset = gdal.Open(out_fp, gdal.GA_Update)
+            self._band_dataset = gdal.Open(url, gdal.GA_Update)
+
         except Exception as e:
             raise e
 
     def is_mask_valid(
-            self,
-            quality_flags: Union[list[int], None],
-            max_out_of_bounds: float,
-            max_invalid_pixels: float,
+            self
     ) -> bool:
         """
 
@@ -245,11 +287,11 @@ class Download:
             return False
 
         pct_out_of_bounds = self.get_percent_out_of_bounds_mask_pixels()
-        if pct_out_of_bounds is not None and pct_out_of_bounds > max_out_of_bounds:
+        if pct_out_of_bounds is not None and pct_out_of_bounds > self.mask.max_out_of_bounds:
             return False
 
-        pct_invalid = self.get_percent_invalid_mask_pixels(quality_flags)
-        if pct_invalid is not None and pct_invalid > max_invalid_pixels:
+        pct_invalid = self.get_percent_invalid_mask_pixels(self.mask.quality_flags)
+        if pct_invalid is not None and pct_invalid > self.mask.max_invalid_pixels:
             return False
 
         return True
@@ -295,8 +337,7 @@ class Download:
         return
 
     def set_band_dataset_nodata_via_mask(
-            self,
-            quality_flags: list[int],
+            self
     ) -> None:
         """
 
@@ -305,7 +346,7 @@ class Download:
         """
 
         arr_mask = self._mask_dataset.ReadAsArray()
-        arr_mask = np.isin(arr_mask, quality_flags)  # not including 0 as valid
+        arr_mask = np.isin(arr_mask, self.mask.quality_flags)  # not including 0 as valid
 
         arr_band = self._band_dataset.ReadAsArray()
         arr_band = np.where(arr_band == -999, self.out_nodata, arr_band)  # -999 is dea nodata
@@ -317,7 +358,7 @@ class Download:
             self,
     ) -> None:
 
-        out_dtype = gdal.GDT_Float32  # TODO: needed for sdev, etc
+        out_dtype = gdal.GDT_Float32  # needed for sdev, etc
 
         options = gdal.TranslateOptions(xRes=self.out_res,
                                         yRes=self.out_res,
@@ -335,9 +376,13 @@ class Download:
     def fix_netcdf_metadata(
             self
     ) -> None:
+        """
+
+        :return:
+        """
 
         filepath = self.build_output_filepath()
-        ds = xr.open_dataset(filepath)
+        ds = xr.open_dataset(filepath, engine='netcdf4')
 
         if 'lat' in ds and 'lon' in ds:
             ds = ds.rename({'lat': 'y', 'lon': 'x'})
@@ -359,7 +404,10 @@ class Download:
             'grid_mapping_name': crs_name
         }
 
-        ds = ds.assign_coords({'platform': self.get_collection_code()})
+        # TODO: testing
+        #ds = ds.assign_coords({'platform': self.get_collection_code()})
+        ds = ds.assign_coords({'collection': self.collection})
+
 
         if 'time' not in ds:
             dt = pd.to_datetime(self.date, format='%Y-%m-%d')
@@ -386,7 +434,7 @@ class Download:
         ds.attrs = {
             'crs': f'EPSG:{self.out_epsg}',
             'grid_mapping': 'spatial_ref',
-            'collections': self.collection,
+            #'collections': self.collection,  # TODO: remove
             'nodata': self.out_nodata,
             'created_by': 'arcdea',
             'processing': 'raw'
@@ -403,14 +451,12 @@ class Download:
         :return:
         """
 
-        # TODO: add to wc mon
         try:
             self._mask_dataset = None
             self._band_dataset = None
         except:
             pass
 
-    # TODO: add to wc mon
     def delete_tmp_tifs(
             self
     ) -> None:
@@ -576,6 +622,7 @@ def fetch_all_stac_features(
 def convert_stac_features_to_downloads(
         features: list[dict],
         assets: list[str],  # TODO: could be Union[str, list[str]]
+        mask: Union[Mask, None],
         out_bbox: tuple[float, float, float, float],
         out_epsg: int,
         out_res: float,
@@ -588,6 +635,7 @@ def convert_stac_features_to_downloads(
     more sophisticated Download objects.
     :param features: List of raw DEA STAC result dictionaries.
     :param assets: List of strings represented requested assets.
+    :param mask: Mask object containing mask and invalid pixel info.
     :param out_bbox: Tuple of floats representing output bbox.
     :param out_epsg: Integer representing output EPSG code.
     :param out_res: Float representing output pixel resolution.
@@ -614,6 +662,7 @@ def convert_stac_features_to_downloads(
                     collection=collection,
                     assets=assets,
                     coordinates=coordinates,
+                    mask=mask,
                     out_bbox=out_bbox,
                     out_epsg=out_epsg,
                     out_res=out_res,
@@ -644,7 +693,7 @@ def group_downloads_by_solar_day(
     :return: List of Download objects grouped by solar day.
     """
 
-    downloads = sorted(downloads, key=lambda d: d.date)
+    downloads = sorted(downloads, key=lambda d: d.datetime)
 
     ids = []
     clean_downloads = []
@@ -685,10 +734,7 @@ def remove_slc_off(
 
 
 def validate_and_download(
-        download: Download,
-        quality_flags: Union[list[int], None],
-        max_out_of_bounds: float,
-        max_invalid_pixels: float,
+        download: Download
 ) -> str:
     """
     Takes a single download object, checks if download is valid based on
@@ -706,25 +752,22 @@ def validate_and_download(
     code = download.get_collection_code()
 
     try:
-        # FIXME: ls9 doesnt have oa_fmask via WCS service?
         download.set_mask_dataset_via_wcs()
-        is_valid = download.is_mask_valid(quality_flags,
-                                          max_out_of_bounds,
-                                          max_invalid_pixels)
+        is_valid = download.is_mask_valid()
 
         if is_valid is True:
             download.set_band_dataset_via_wcs()
-            download.set_band_dataset_nodata_via_mask(quality_flags)
+            download.set_band_dataset_nodata_via_mask()
             download.export_band_dataset_to_netcdf_file()
             message = f'Download {code} {date}: successfully downloaded.'
         else:
             message = f'Download {code} {date}: skipped; too many invalid pixels.'
 
-    except:
-        message = f'Download {code} {date}: error occurred.'
+    except Exception as e:
+        message = f'Download {code} {date}: error occurred: {e}.'
 
     download.close_datasets()
-    download.delete_tmp_tifs()  # TODO: add to wc mon
+    #download.delete_tmp_tifs()  # TODO: only needed if gdal.open fails
 
     return message
 
@@ -753,7 +796,7 @@ def download(
         message = f'Download {code} {date}: error occurred.'
 
     download.close_datasets()
-    download.delete_tmp_tifs()
+    #download.delete_tmp_tifs()  # TODO: only needed if gdal.open fails
 
     return message
 
@@ -789,11 +832,34 @@ def rename_bands_in_netcdf_files(
     return
 
 
-def combine_netcdf_files(
+def combine_ncs_via_dask(
         folder: str,
         out_nc: str
 ) -> None:
     """
+
+    :param folder:
+    :param out_nc:
+    :return:
+    """
+
+
+    nc_folder = os.path.join(folder, '*.nc')
+    ds = xr.open_mfdataset(nc_folder, lock=False)  # lock=false needed to prevent hang
+    ds = ds.sortby('time')
+
+    ds.to_netcdf(out_nc)
+    ds.close()
+
+    return
+
+
+def combine_ncs(
+        folder: str,
+        out_nc: str
+) -> None:
+    """
+    Old version prior to dask being built in.
 
     :param folder:
     :param out_nc:
@@ -820,90 +886,18 @@ def combine_netcdf_files(
         ds_list, collections = [], []
         for file in files:
             ds = xr.open_dataset(file)
-            collections.append(ds.attrs['collections'])
             ds_list.append(ds)
 
         ds = xr.concat(ds_list, dim='time').sortby('time')
-
-        ds.attrs['collections'] = tuple(sorted(set(collections)))
 
         ds.to_netcdf(out_nc)
         ds.close()
 
         for ds in ds_list:
             ds.close()
+
     else:
-        arcpy.AddWarning('NetCDF is too big for memory, using slow (but safe) combine method.')
-
-        # raise NotImplemented('not ready')
-        #
-        # ds = xr.open_dataset(files[0])
-        #
-        # # ds_attrs = ds.attrs
-        # # ds_band_attrs = ds[list(ds)[0]].attrs
-        # # ds_spatial_ref_attrs = ds['spatial_ref'].attrs
-        #
-        # arcpy.md.MergeMultidimensionalRasters(in_multidimensional_rasters=files,
-        #                                       out_raster=out_nc,
-        #                                       resolve_overlap_method='FIRST')
-        #
-        # ds = xr.open_dataset(out_nc)
-        #
-        # # TODO: most of below is dupe code from above
-        #
-        # if 'StdTime' in ds:
-        #     ds = ds.rename({'StdTime': 'time'})
-        #
-        # if 'lat' in ds and 'lon' in ds:
-        #     ds = ds.rename({'lat': 'y', 'lon': 'x'})
-        #
-        # # TODO: newer versions of gdal may break this
-        # for band in ds:
-        #     if len(ds[band].shape) == 0:
-        #         crs_name = band
-        #         crs_wkt = str(ds[band].attrs.get('spatial_ref'))
-        #         ds = ds.drop_vars(crs_name)
-        #         break
-        #
-        # # TODO: get epsg from layer
-        # out_epsg = 4326
-        #
-        # ds = ds.assign_coords({'spatial_ref': out_epsg})
-        # ds['spatial_ref'].attrs = {
-        #     'spatial_ref': crs_wkt,
-        #     'grid_mapping_name': crs_name
-        # }
-        #
-        # for dim in ds.dims:
-        #     if dim in ['x', 'y']:
-        #         ds[dim].attrs = {
-        #             #'units': 'metre'  # TODO: how to get units?
-        #             'resolution': np.mean(np.diff(ds[dim])),
-        #             'crs': f'EPSG:{out_epsg}'
-        #         }
-        #
-        # for i, band in enumerate(ds):
-        #     ds[band].attrs = {
-        #         'units': '1',
-        #         #'nodata': self.nodata,  TODO: implemented out_nodata
-        #         'crs': f'EPSG:{out_epsg}',
-        #         'grid_mapping': 'spatial_ref',
-        #     }
-        #
-        #     #ds = ds.rename({band: self.assets[i]})
-        #
-        # # TODO: we wipe gdal, history, conventions, other metadata
-        # ds.attrs = {
-        #     'crs': f'EPSG:{out_epsg}',
-        #     'grid_mapping': 'spatial_ref'
-        # }
-        #
-        # ds.to_netcdf(out_nc)
-        # ds.close()
-
-        # ds.attrs = ds_attrs
-        # ds['spatial_ref'].attrs = ds_spatial_ref_attrs
-        # for var in ds:
-        #     ds[var].attrs = ds_band_attrs
+        raise MemoryError('Not enough memory to combine NetCDFs.')
 
     return
+

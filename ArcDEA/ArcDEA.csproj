@@ -21,10 +21,14 @@
     <None Remove="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\testing.py" />
     <None Remove="Toolboxes\toolboxes\scripts\constants.py" />
+    <None Remove="Toolboxes\toolboxes\scripts\cube.py" />
     <None Remove="Toolboxes\toolboxes\scripts\indices.py" />
     <None Remove="Toolboxes\toolboxes\scripts\shared.py" />
+    <None Remove="Toolboxes\toolboxes\scripts\stac.py" />
     <None Remove="Toolboxes\toolboxes\scripts\web.py" />
+    <None Remove="Toolboxes\toolboxes\scripts\web2.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config.daml" />
@@ -43,10 +47,14 @@
     <Content Include="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\testing.py" />
     <Content Include="Toolboxes\toolboxes\scripts\constants.py" />
+    <Content Include="Toolboxes\toolboxes\scripts\cube.py" />
     <Content Include="Toolboxes\toolboxes\scripts\indices.py" />
     <Content Include="Toolboxes\toolboxes\scripts\shared.py" />
+    <Content Include="Toolboxes\toolboxes\scripts\stac.py" />
     <Content Include="Toolboxes\toolboxes\scripts\web.py" />
+    <Content Include="Toolboxes\toolboxes\scripts\web2.py" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ArcGIS.Desktop.Framework">

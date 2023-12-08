@@ -11,7 +11,6 @@ def execute(
     import arcpy
 
     from concurrent.futures import ThreadPoolExecutor
-    from concurrent.futures import as_completed
 
     from scripts import shared
     from scripts import constants
@@ -35,12 +34,12 @@ def execute(
     in_res = parameters[9].value
 
     # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
+    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\perth_sa.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls_gm.nc'
     # in_start_year = 1990
-    # in_end_year = 2020
+    # in_end_year = 2023
     # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI'"
-    # in_band_assets = "'Blue';'Green';'Red';'SMAD'"
+    # in_band_assets = "'Blue';'Green';'Red';NIR;SWIR 1;SWIR 2;'EMAD';'SMAD';BCMAD"
     # in_include_slc_off_data = False
     # in_nodata_value = -999
     # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
@@ -54,7 +53,7 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = shared.detect_num_cores(modify_percent=0.95)  # TODO: set this via ui
+    num_cpu = shared.detect_num_cores(modify_percent=0.90)  # TODO: set this via ui
 
     collections_map = constants.GEOMED_COLLECTIONS
     assets_map = constants.GEOMED_BAND_ASSETS
@@ -129,10 +128,14 @@ def execute(
         os.mkdir(tmp_folder)
 
     try:
+        # create mask info (none for geomed)
+        mask = None
+
         # reproject output bbox to requested, convert stac features to downloads
         out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
         downloads = web.convert_stac_features_to_downloads(stac_features,
                                                            assets,
+                                                           mask,
                                                            out_bbox,
                                                            out_epsg,
                                                            out_res,
@@ -163,13 +166,8 @@ def execute(
     try:
         i = 0
         with ThreadPoolExecutor(max_workers=num_cpu) as pool:
-            futures = []
-            for download in downloads:
-                task = pool.submit(web.download, download)
-                futures.append(task)
-
-            for future in as_completed(futures):
-                arcpy.AddMessage(future.result())
+            for result in pool.map(web.download, downloads):
+                arcpy.AddMessage(result)
 
                 i += 1
                 if i % 1 == 0:
@@ -216,7 +214,7 @@ def execute(
     arcpy.SetProgressor('default', 'Combining NetCDF files...')
 
     try:
-        web.combine_netcdf_files(folder=tmp_folder,
+        web.combine_ncs_via_dask(folder=tmp_folder,
                                  out_nc=out_nc)
 
     except Exception as e:
@@ -235,4 +233,4 @@ def execute(
 
     # endregion
 
-# execute(None)
+#execute(None)

@@ -17,6 +17,7 @@
           <group refID="ArcDEA_Group3" />
           <group refID="ArcDEA_Group4" />
           <group refID="ArcDEA_Group5" />
+		  <group refID="ArcDEA_Group6" />
         </tab>
       </tabs>
       <groups>
@@ -28,7 +29,7 @@
           <button refID="ArcDEA_CalculateIndices" size="large" />
         </group>
         <group id="ArcDEA_Group3" caption="Processing" appearsOnAddInTab="false">
-		  <button refID="ArcDEA_RemoveOutliers" size="large" />
+          <button refID="ArcDEA_RemoveOutliers" size="large" />
           <button refID="ArcDEA_ResampleData" size="large" />
           <button refID="ArcDEA_GroupData" size="large" />
         </group>
@@ -38,7 +39,10 @@
         <group id="ArcDEA_Group5" caption="Settings" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_SettingsGallery" inline="false" size="large" />
         </group>
-      </groups>
+		<group id="ArcDEA_Group6" caption="Testing" appearsOnAddInTab="false">
+		  <button refID="ArcDEA_Testing" size="large" />
+		</group>
+	</groups>
       <galleries>
         <gallery id="ArcDEA_FetchBaselineGallery" caption="Fetch Baseline" className="FetchBaselineGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchBaselineGalleryTemplate.xaml" templateID="FetchBaselineGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Fetch baseline satellite data.">Download analysis ready Lansat and Sentinel 2 baseline data.<disabledText /></tooltip>
@@ -57,14 +61,17 @@
         <button id="ArcDEA_CalculateIndices" caption="Calculate Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Calculate indices">Calculate indices from previously fetched data.<disabledText /></tooltip>
         </button>
-		<button id="ArcDEA_RemoveOutliers" caption="Remove Outliers" className="RemoveOutliers" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-		  <tooltip heading="Remove outliers">Remove outliers from previously fetched data.<disabledText /></tooltip>
-		</button>
+        <button id="ArcDEA_RemoveOutliers" caption="Remove Outliers" className="RemoveOutliers" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Remove outliers">Remove outliers from previously fetched data.<disabledText /></tooltip>
+        </button>
         <button id="ArcDEA_ResampleData" caption="Resample" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Resample data">Resample previously fetched data to higher or lower temporal dimension.<disabledText /></tooltip>
         </button>
         <button id="ArcDEA_GroupData" caption="Group" className="GroupData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Group data">Group previously fetched data based on temporal dimension.<disabledText /></tooltip>
+        </button>
+        <button id="ArcDEA_Testing" caption="Testing" className="Testing" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+          <tooltip heading="Testing">Just for testing.<disabledText /></tooltip>
         </button>
       </controls>
     </insertModule>

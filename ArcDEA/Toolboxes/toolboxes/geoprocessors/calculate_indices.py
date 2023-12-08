@@ -16,16 +16,16 @@ def execute(
     # region EXTRACT PARAMETERS
 
     # uncomment these when not testing
-    in_nc = parameters[0].valueAsText
-    out_nc = parameters[1].valueAsText
-    in_type = parameters[2].valueAsText
-    in_index = parameters[3].valueAsText
+    # in_nc = parameters[0].valueAsText
+    # out_nc = parameters[1].valueAsText
+    # in_type = parameters[2].valueAsText
+    # in_index = parameters[3].valueAsText
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls.nc'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\data\ls_ndvi.nc'
-    # in_type = 'Vegetation'
-    # in_index = 'NDVI: (Normalised Difference Vegetation Index)'
+    in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
+    out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_ndvi.nc'
+    in_type = 'Vegetation'
+    in_index = 'NDVI: (Normalised Difference Vegetation Index)'
 
     # endregion
 
@@ -44,9 +44,10 @@ def execute(
     arcpy.SetProgressor('default', 'Reading and checking NetCDF data...')
 
     try:
-        # load netcdf  # TODO: memory?
-        with xr.open_dataset(in_nc) as ds:
-            ds.load()
+        # lazy load xr dataset as dask arrays
+        ds = xr.open_dataset(in_nc,
+                             chunks=-1,
+                             mask_and_scale=False)
 
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
@@ -61,13 +62,12 @@ def execute(
     # check if netcdf has nodata attribute
     nodata = ds.attrs.get('nodata')
     if nodata is None:
-        arcpy.AddError('No nodata attribute in NetCDF.')
+        arcpy.AddError('No NoData attribute in NetCDF.')
         return
 
-    # check xr has collections attr
-    collections = ds.attrs.get('collections')
-    if collections is None:
-        arcpy.AddError('No collections attribute in NetCDF.')
+    # check xr has collection coordinates
+    if 'collection' not in ds:
+        arcpy.AddError('No collections coordinates in NetCDF.')
         return
 
     # endregion
@@ -83,7 +83,7 @@ def execute(
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
     # extract collections, ensure it's a list
-    collections = ds.attrs.get('collections')
+    collections = list(set(ds['collection'].to_numpy()))
     if not isinstance(collections, list):
         collections = [collections]
 
@@ -98,7 +98,7 @@ def execute(
         return
 
     # convert nodata to null
-    ds = ds.where(ds != nodata)
+    #ds = ds.where(ds != nodata)
 
     # extract original bands for later removal
     raw_bands = list(ds.data_vars)
@@ -230,6 +230,7 @@ def execute(
     arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
+        ds = ds.astype('float32')
         ds.to_netcdf(out_nc)
 
     except Exception as e:
@@ -246,4 +247,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+execute(None)
