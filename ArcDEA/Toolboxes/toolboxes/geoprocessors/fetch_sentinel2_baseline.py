@@ -5,6 +5,7 @@ def execute(
     # region IMPORTS
 
     import os
+    import time
     import datetime
     import arcpy
 
@@ -64,6 +65,8 @@ def execute(
     # allow output overwrites
     arcpy.env.overwriteOutput = True
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -103,6 +106,8 @@ def execute(
     # validate num threads, if none will use num of cores - 1
     max_threads = shared.prepare_max_threads(in_max_threads)
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -127,6 +132,8 @@ def execute(
     if len(stac_features) == 0:
         arcpy.AddWarning('No STAC features were found.')
         return
+
+    time.sleep(1)
 
     # endregion
 
@@ -168,6 +175,8 @@ def execute(
         arcpy.AddWarning('No valid downloads were found.')
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -201,6 +210,8 @@ def execute(
         arcpy.AddWarning('No valid downloads were found.')
         return
 
+    time.sleep(1)
+
     arcpy.ResetProgressor()
 
     # endregion
@@ -230,6 +241,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     arcpy.ResetProgressor()
 
     # endregion
@@ -246,6 +259,8 @@ def execute(
         arcpy.AddError('Error occurred while cleaning and combining NetCDFs. See messages.')
         arcpy.AddMessage(str(e))
         return
+
+    time.sleep(1)
 
     # endregion
 
@@ -265,6 +280,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -280,6 +297,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -289,6 +308,8 @@ def execute(
 
     cube.safe_close_ncs(tmp_folder)  # TODO: surely there is better way
     shared.drop_temp_folder(tmp_folder)
+
+    time.sleep(1)
 
     # endregion
 

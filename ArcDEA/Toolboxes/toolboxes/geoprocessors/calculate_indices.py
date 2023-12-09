@@ -5,6 +5,7 @@ def execute(
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
 
+    import time
     import xarray as xr
     import arcpy
 
@@ -16,16 +17,16 @@ def execute(
     # region EXTRACT PARAMETERS
 
     # uncomment these when not testing
-    # in_nc = parameters[0].valueAsText
-    # out_nc = parameters[1].valueAsText
-    # in_type = parameters[2].valueAsText
-    # in_index = parameters[3].valueAsText
+    in_nc = parameters[0].valueAsText
+    out_nc = parameters[1].valueAsText
+    in_type = parameters[2].valueAsText
+    in_index = parameters[3].valueAsText
 
     # uncomment these when testing
-    in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_ndvi.nc'
-    in_type = 'Vegetation'
-    in_index = 'NDVI: (Normalised Difference Vegetation Index)'
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
+    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_ndvi.nc'
+    # in_type = 'Vegetation'
+    # in_index = 'NDVI: (Normalised Difference Vegetation Index)'
 
     # endregion
 
@@ -35,6 +36,8 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
+
+    time.sleep(1)
 
     # endregion
 
@@ -46,7 +49,7 @@ def execute(
     try:
         # lazy load xr dataset as dask arrays
         ds = xr.open_dataset(in_nc,
-                             chunks=-1,
+                             chunks={'time': 1},
                              mask_and_scale=False)
 
     except Exception as e:
@@ -69,6 +72,8 @@ def execute(
     if 'collection' not in ds:
         arcpy.AddError('No collections coordinates in NetCDF.')
         return
+
+    time.sleep(1)
 
     # endregion
 
@@ -97,11 +102,16 @@ def execute(
         arcpy.AddError('Could not find collection.')
         return
 
-    # convert nodata to null
-    #ds = ds.where(ds != nodata)
+    # set all numeric nodata to nan
+    ds = ds.where(ds != nodata)
+
+    # ensure datatype is float32
+    ds = ds.astype('float32')  # TODO: keep an eye on float64
 
     # extract original bands for later removal
     raw_bands = list(ds.data_vars)
+
+    time.sleep(1)
 
     # endregion
 
@@ -179,6 +189,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -195,6 +207,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -206,8 +220,11 @@ def execute(
     # TODO: not sure if we want to do this
     #ds = ds.where(~ds.isnull(), nodata)
 
-    # TODO: set dtype to int? what about index?
-    # ...
+    # set dtype to float32 (getting float64 back)
+    # TODO: keep an eye on float64 issues
+    #ds = ds.astype('float32')
+
+    time.sleep(1)
 
     # endregion
 
@@ -222,6 +239,8 @@ def execute(
     for var in ds:
         ds[var].attrs = ds_band_attrs
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -230,13 +249,17 @@ def execute(
     arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
-        ds = ds.astype('float32')
+        # cast collections to string to prevent warning
+        ds['collection'] = ds['collection'].astype(str)
+
         ds.to_netcdf(out_nc)
 
     except Exception as e:
         arcpy.AddError('Error occurred when exporting NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
         return
+
+    time.sleep(1)
 
     # endregion
 
@@ -245,6 +268,8 @@ def execute(
 
     #arcpy.SetProgressor('default', 'Cleaning up environment...')
 
+    time.sleep(1)
+
     # endregion
 
-execute(None)
+# execute(None)
