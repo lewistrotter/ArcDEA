@@ -104,24 +104,6 @@ def prepare_quality_flags(raw_quality_flags: str, raw_mask_algorithm: str) -> li
     return quality_flags
 
 
-def append_mask_band(clean_assets: list, clean_mask_algorithm: str) -> list:
-    """
-    Appends a mask algorithm band to the end of the assets list.
-    :param clean_assets: List of clean band asset names.
-    :param clean_mask_algorithm: Clean mask band asset name.
-    :return: List of all clean assets with mask band asset added to end.
-    """
-
-    if len(clean_assets) == 0:
-        raise ValueError('Assets has no values.')
-    elif clean_mask_algorithm is None or clean_mask_algorithm == '':
-        raise ValueError('Mask algorithm not provided.')
-
-    assets = clean_assets + [clean_mask_algorithm]
-
-    return assets
-
-
 def prepare_max_out_of_bounds(raw_out_of_bounds: float) -> float:
     """
     Assess and correct (if needed) the out of bounds value.
@@ -272,6 +254,24 @@ def reproject_bbox(
     bbox = extent.XMin, extent.YMin, extent.XMax, extent.YMax
 
     return bbox
+
+
+def append_mask_band(clean_assets: list, clean_mask_algorithm: str) -> list:
+    """
+    Appends a mask algorithm band to the end of the assets list.
+    :param clean_assets: List of clean band asset names.
+    :param clean_mask_algorithm: Clean mask band asset name.
+    :return: List of all clean assets with mask band asset added to end.
+    """
+
+    if len(clean_assets) == 0:
+        raise ValueError('Assets has no values.')
+    elif clean_mask_algorithm is None or clean_mask_algorithm == '':
+        raise ValueError('Mask algorithm not provided.')
+
+    assets = clean_assets + [clean_mask_algorithm]
+
+    return assets
 
 
 def create_temp_folder(tmp_folder: str) -> None:

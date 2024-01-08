@@ -1,4 +1,3 @@
-
 def execute(
         parameters
 ):
@@ -9,6 +8,7 @@ def execute(
     import xarray as xr
     import arcpy
 
+    from scripts import cube
     from scripts import indices
 
     # endregion
@@ -23,8 +23,8 @@ def execute(
     in_index = parameters[3].valueAsText
 
     # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2_ndvi.nc'
+    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
+    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls_ndvi.nc'
     # in_type = 'Vegetation'
     # in_index = 'NDVI: (Normalised Difference Vegetation Index)'
 
@@ -47,29 +47,18 @@ def execute(
     arcpy.SetProgressor('default', 'Reading and checking NetCDF data...')
 
     try:
-        # lazy load xr dataset as dask arrays
         ds = xr.open_dataset(in_nc,
-                             chunks={'time': 1},
-                             mask_and_scale=False)
+                             chunks={'time': 1},    # chunk to prevent memory
+                             mask_and_scale=False)  # ensure dtype maintained
 
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
         return
 
-    if 'x' not in ds or 'y' not in ds:
-        arcpy.AddError('No x, y dimensions found in NetCDF.')
+    if cube.check_xr_is_valid(ds) is False:
+        arcpy.AddError('Input NetCDF is not a valid ArcDEA NetCDF.')
         return
-
-    nodata = ds.attrs.get('nodata')
-    if nodata is None:
-        arcpy.AddError('No NoData attribute in NetCDF.')
-        return
-
-    # TODO: remove if decide not to use collections any more
-    #if 'collection' not in ds:
-        #arcpy.AddError('No collections coordinates in NetCDF.')
-        #return
 
     time.sleep(1)
 
@@ -84,32 +73,15 @@ def execute(
     ds_band_attrs = ds[list(ds)[0]].attrs
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
-    # TODO: remove if decide not to use collections any more
-    #collections = list(set(ds['collection'].to_numpy()))
-    #if not isinstance(collections, list):
-        #collections = [collections]
-
-    #collection = ';'.join([c for c in collections])
-    #if 'ls' in collection:
-        #collection = 'ls'
-    #elif 's2' in collection:
-        #collection = 's2'
-    #else:
-        #arcpy.AddError('Could not find collection.')
-        #return
-
     collection = ds.attrs.get('collection')
     if collection not in ['ls', 's2']:
-        raise AttributeError('Collection not Landsat or Sentinel-2.')
+        arcpy.AddError('NetCDF is not from Landsat or Sentinel-2 satellites.')
+        return
 
-    # set all numeric nodata to nan
-    ds = ds.where(ds != nodata)
+    nodata = ds.attrs.get('nodata')
+    ds = ds.where(ds != nodata).astype('float32')  # set nodata to nan, ensure float32
 
-    # ensure datatype is float32
-    ds = ds.astype('float32')  # TODO: keep an eye on float64
-
-    # extract original bands for later removal
-    raw_bands = list(ds.data_vars)
+    raw_bands = list(ds)  # store names for easy drop later on
 
     time.sleep(1)
 
@@ -121,68 +93,10 @@ def execute(
     arcpy.SetProgressor('default', 'Calculating index...')
 
     try:
-        if in_type == 'Vegetation':
-            if in_index.startswith('NDVI:'):
-                ds = indices.ndvi(ds=ds, collection=collection)
-            elif in_index.startswith('EVI:'):
-                ds = indices.evi(ds=ds, collection=collection)
-            elif in_index.startswith('LAI:'):
-                ds = indices.lai(ds=ds, collection=collection)
-            elif in_index.startswith('MAVI:'):
-                ds = indices.mavi(ds=ds, collection=collection)
-            # savi
-            elif in_index.startswith('MSAVI:'):
-                ds = indices.msavi(ds=ds, collection=collection)
-            elif in_index.startswith('NDCI:'):
-                ds = indices.ndci(ds=ds, collection=collection)
-            elif in_index.startswith('kNDVI:'):
-                ds = indices.kndvi(ds=ds, collection=collection)
-            else:
-                raise AttributeError('Vegetation index does not exist.')
-
-        elif in_type == 'Water':
-            if in_index.startswith('NDMI:'):
-                ds = indices.ndmi(ds=ds, collection=collection)
-            elif in_index.startswith('NDWI:'):
-                ds = indices.ndwi(ds=ds, collection=collection)
-            elif in_index.startswith('MNDWI:'):
-                ds = indices.mndwi(ds=ds, collection=collection)
-            elif in_index.startswith('WI:'):
-                ds = indices.wi(ds=ds, collection=collection)
-            else:
-                raise AttributeError('Water index does not exist.')
-
-        elif in_type == 'Fire':
-            if in_index.startswith('BAI:'):
-                ds = indices.bai(ds=ds, collection=collection)
-            elif in_index.startswith('NBR:'):
-                ds = indices.nbr(ds=ds, collection=collection)
-            else:
-                raise AttributeError('Fire index does not exist.')
-
-        elif in_type == 'Urban':
-            if in_index.startswith('NDBI:'):
-                ds = indices.ndbi(ds=ds, collection=collection)
-            elif in_index.startswith('BUI:'):
-                ds = indices.bui(ds=ds, collection=collection)
-            elif in_index.startswith('BAEI:'):
-                ds = indices.baei(ds=ds, collection=collection)
-            elif in_index.startswith('NBI:'):
-                ds = indices.nbi(ds=ds, collection=collection)
-            elif in_index.startswith('BSI:'):
-                ds = indices.bsi(ds=ds, collection=collection)
-            else:
-                raise AttributeError('Urban index does not exist.')
-
-        elif in_type == 'Minerals':
-            if in_index.startswith('CMR:'):
-                ds = indices.cmr(ds=ds, collection=collection)
-            elif in_index.startswith('FMR:'):
-                ds = indices.fmr(ds=ds, collection=collection)
-            elif in_index.startswith('IOR:'):
-                ds = indices.ior(ds=ds, collection=collection)
-            else:
-                raise AttributeError('Mineral index does not exist.')
+        indices.calc_index(ds,
+                           in_type,
+                           in_index,
+                           collection)
 
     except Exception as e:
         arcpy.AddError('Error occurred when calculating index. Check messages.')
@@ -194,12 +108,11 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region REMOVE RAW NETCDF BANDS
+    # region DROP RAW NETCDF BANDS
 
-    arcpy.SetProgressor('default', 'Removing raw NetCDF bands...')
+    arcpy.SetProgressor('default', 'Dropping raw NetCDF bands...')
 
     try:
-        # remove all raw netcdf bands
         ds = ds.drop_vars(raw_bands)
 
     except Exception as e:
@@ -216,30 +129,13 @@ def execute(
 
     arcpy.SetProgressor('default', 'Finalising NetCDF...')
 
-    # set nan back to original nodata value
-    # TODO: not sure if we want to do this
-    #ds = ds.where(~ds.isnull(), nodata)
+    # TODO: set nodata back to original value?
 
-    # set dtype to float32 (getting float64 back)
-    # TODO: keep an eye on float64 issues
-    #ds = ds.astype('float32')
-
-    time.sleep(1)
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region APPEND ATTRIBUTES BACK ON
-
-    arcpy.SetProgressor('default', 'Appending NetCDF attributes back on...')
-
-    # append attributes back on
     ds.attrs = ds_attrs
     ds['spatial_ref'].attrs = ds_spatial_ref_attrs
     for var in ds:
         ds[var].attrs = ds_band_attrs
 
-    # update processing chain
     ds.attrs['processing'] += ';' + 'index'
 
     time.sleep(1)
@@ -252,27 +148,14 @@ def execute(
     arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
-        # TODO: enable if using collections
-        # cast collections to string to prevent warning
-        #ds['collection'] = ds['collection'].astype(str)
-
-        ds.to_netcdf(out_nc)
+        cube.export_xr_to_nc(ds, out_nc)
 
     except Exception as e:
-        arcpy.AddError('Error occurred when exporting NetCDF. Check messages.')
+        arcpy.AddError('Error occurred while exporting combined NetCDF. See messages.')
         arcpy.AddMessage(str(e))
         return
 
     time.sleep(1)
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN UP ENVIRONMENT
-
-    #arcpy.SetProgressor('default', 'Cleaning up environment...')
-
-    # time.sleep(1)
 
     # endregion
 

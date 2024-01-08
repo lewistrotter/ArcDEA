@@ -572,6 +572,47 @@ def apply_xr_mask(
     return ds
 
 
+def check_xr_is_valid(ds: xr.Dataset) -> bool:
+    """
+    Checks xarray Dataset for required metadata.
+
+    :param ds: Xarray Dataset loaded from NetCDF.
+    :return: Whether valid (True) or not (False)
+    """
+
+    # TODO: decide whether we want errors here.
+
+    try:
+        if 'x' not in ds or 'y' not in ds:
+            #raise AttributeError('No x, y dimensions found in NetCDF.')
+            return False
+
+        if 'time' not in ds:
+            #raise AttributeError('No time dimension found in NetCDF.')
+            return False
+
+        if ds.attrs.get('nodata') is None:
+            #raise AttributeError('No NoData attribute in NetCDF.')
+            return False
+
+        if ds.attrs.get('collection') is None:
+            #raise AttributeError('No NoData attribute in NetCDF.')
+            return False
+
+        if ds.attrs.get('created_by') is None:
+            #raise AttributeError('Not an ArcDEA NetCDF.')
+            return False
+
+        if ds.attrs.get('created_by') != 'arcdea':
+            #raise AttributeError('Not an ArcDEA NetCDF.')
+            return False
+
+    except:
+        return False
+
+    return True
+
+
 def export_xr_to_nc(ds: xr.Dataset, out_nc: str) -> None:
     """
     Takes a Xarray Dataset and exports it to a NetCDF at a given

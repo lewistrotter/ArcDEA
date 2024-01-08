@@ -630,3 +630,85 @@ def ior(
         raise e
 
     return ds
+
+
+def calc_index(
+        ds: xr.Dataset,
+        index_type: str,
+        index_name: str,
+        collection: str
+) -> xr.Dataset:
+    """
+    Calculate one of many indices.
+
+    :param ds: Xarray Dataset.
+    :param index_type: Type of index (e.g., Vegetation, Water).
+    :param index_name: Name of index (as abbreviation).
+    :param collection: Name of satellite collection (either ls or s2).
+    :return: Xarray Dataset with index as new variable.
+    """
+
+    if index_type == 'Vegetation':
+        if index_name.startswith('NDVI:'):
+            ds = ndvi(ds=ds, collection=collection)
+        elif index_name.startswith('EVI:'):
+            ds = evi(ds=ds, collection=collection)
+        elif index_name.startswith('LAI:'):
+            ds = lai(ds=ds, collection=collection)
+        elif index_name.startswith('MAVI:'):
+            ds = mavi(ds=ds, collection=collection)
+        # savi
+        elif index_name.startswith('MSAVI:'):
+            ds = msavi(ds=ds, collection=collection)
+        elif index_name.startswith('NDCI:'):
+            ds = ndci(ds=ds, collection=collection)
+        elif index_name.startswith('kNDVI:'):
+            ds = kndvi(ds=ds, collection=collection)
+        else:
+            raise AttributeError('Vegetation index does not exist.')
+
+    elif index_type == 'Water':
+        if index_name.startswith('NDMI:'):
+            ds = ndmi(ds=ds, collection=collection)
+        elif index_name.startswith('NDWI:'):
+            ds = ndwi(ds=ds, collection=collection)
+        elif index_name.startswith('MNDWI:'):
+            ds = mndwi(ds=ds, collection=collection)
+        elif index_name.startswith('WI:'):
+            ds = wi(ds=ds, collection=collection)
+        else:
+            raise AttributeError('Water index does not exist.')
+
+    elif index_type == 'Fire':
+        if index_name.startswith('BAI:'):
+            ds = bai(ds=ds, collection=collection)
+        elif index_name.startswith('NBR:'):
+            ds = nbr(ds=ds, collection=collection)
+        else:
+            raise AttributeError('Fire index does not exist.')
+
+    elif index_type == 'Urban':
+        if index_name.startswith('NDBI:'):
+            ds = ndbi(ds=ds, collection=collection)
+        elif index_name.startswith('BUI:'):
+            ds = bui(ds=ds, collection=collection)
+        elif index_name.startswith('BAEI:'):
+            ds = baei(ds=ds, collection=collection)
+        elif index_name.startswith('NBI:'):
+            ds = nbi(ds=ds, collection=collection)
+        elif index_name.startswith('BSI:'):
+            ds = bsi(ds=ds, collection=collection)
+        else:
+            raise AttributeError('Urban index does not exist.')
+
+    elif index_type == 'Minerals':
+        if index_name.startswith('CMR:'):
+            ds = cmr(ds=ds, collection=collection)
+        elif index_name.startswith('FMR:'):
+            ds = fmr(ds=ds, collection=collection)
+        elif index_name.startswith('IOR:'):
+            ds = ior(ds=ds, collection=collection)
+        else:
+            raise AttributeError('Mineral index does not exist.')
+
+    return ds
