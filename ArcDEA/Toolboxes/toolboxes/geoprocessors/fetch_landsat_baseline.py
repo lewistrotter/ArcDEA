@@ -1,4 +1,3 @@
-
 def execute(
         parameters
 ):
@@ -6,14 +5,16 @@ def execute(
     # region IMPORTS
 
     import os
+    import time
     import datetime
     import arcpy
 
     from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import as_completed
 
+    from scripts import stac
+    from scripts import cube
     from scripts import shared
-    from scripts import constants
-    from scripts import web
 
     # endregion
 
@@ -31,14 +32,16 @@ def execute(
     in_quality_flags = parameters[7].valueAsText
     in_max_out_of_bounds = parameters[8].value
     in_max_invalid_pixels = parameters[9].value
-    in_nodata_value = parameters[10].value
-    in_srs = parameters[11].value
-    in_res = parameters[12].value
+    in_keep_mask = parameters[10].value
+    in_nodata_value = parameters[11].value
+    in_srs = parameters[12].value
+    in_res = parameters[13].value
+    in_max_threads = parameters[14].value
 
     # uncomment these when testing
     # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
-    # in_start_date = datetime.datetime(1990, 1, 1)
+    # in_start_date = datetime.datetime(2000, 1, 1)
     # in_end_date = datetime.datetime.now()
     # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI';'Landsat 9 OLI-2'"
     # in_band_assets = "'Blue';'Green';'Red';'NIR'"
@@ -46,9 +49,11 @@ def execute(
     # in_quality_flags = "'Valid';'Shadow';'Snow';'Water'"
     # in_max_out_of_bounds = 10
     # in_max_invalid_pixels = 5
+    # in_keep_mask = False
     # in_nodata_value = -999
     # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
     # in_res = 30
+    # in_max_threads = None
 
     # endregion
 
@@ -58,11 +63,8 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = shared.detect_num_cores(modify_percent=0.90)  # TODO: set this via ui
 
-    collections_map = constants.BASELINE_COLLECTIONS
-    assets_map = constants.BASELINE_BAND_ASSETS
-    quality_fmask_map = constants.QUALITY_FMASK_FLAGS
+    time.sleep(1)
 
     # endregion
 
@@ -74,28 +76,28 @@ def execute(
     fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
     fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
 
-    start_date = in_start_date.datetime().strftime('%Y-%m-%d')
-    end_date = in_end_date.datetime().strftime('%Y-%m-%d')
+    start_date = in_start_date.date().strftime('%Y-%m-%d')
+    end_date = in_end_date.date().strftime('%Y-%m-%d')
 
-    collections = shared.unpack_multivalue_param(in_collections)
-    collections = [collections_map[_] for _ in collections]
+    collections = shared.prepare_collections(in_collections)
+    assets = shared.prepare_assets(in_band_assets)
 
-    assets = shared.unpack_multivalue_param(in_band_assets)
-    assets = [assets_map[_] for _ in assets]
+    in_mask_algorithm = 'fMask'  # note: landsat only supports fmask
+    quality_flags = shared.prepare_quality_flags(in_quality_flags, in_mask_algorithm)
+    mask_algorithm = shared.prepare_mask_algorithm(in_mask_algorithm)
+    assets = shared.append_mask_band(assets, mask_algorithm)  # append mask band to user bands
 
-    quality_flags = shared.unpack_multivalue_param(in_quality_flags)
-    quality_flags = [quality_fmask_map[_] for _ in quality_flags]
+    max_out_of_bounds = shared.prepare_max_out_of_bounds(in_max_out_of_bounds)
+    max_invalid_pixels = shared.prepare_max_invalid_pixels(in_max_invalid_pixels)
 
     out_nodata = in_nodata_value
+    out_epsg = shared.prepare_spatial_reference(in_srs)
+    out_res = shared.prepare_resolution(in_res, out_epsg)
+    out_dtype = 'int16'  # output dtype always int16 for baseline
 
-    out_epsg = int(in_srs.split(': ')[-1].replace(')', ''))
+    max_threads = shared.prepare_max_threads(in_max_threads)  # if user gave none, uses max cpus - 1
 
-    out_res = in_res
-    if out_epsg == 4326:
-        out_res *= 9.466833186042272E-06
-
-    out_nc = out_nc
-    out_extension = '.nc'
+    time.sleep(1)
 
     # endregion
 
@@ -105,22 +107,23 @@ def execute(
     arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
 
     try:
-        # project stac bbox to wgs 1984, fetch all available stac items
+        # reproject stac bbox to wgs 1984, fetch all available stac items
         stac_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, 4326)
-        stac_features = web.fetch_all_stac_features(collections,
-                                                    start_date,
-                                                    end_date,
-                                                    stac_bbox,
-                                                    100)
+        stac_features = stac.fetch_all_stac_feats(collections,
+                                                  start_date,
+                                                  end_date,
+                                                  stac_bbox,
+                                                  100)
     except Exception as e:
         arcpy.AddError('Error occurred during DEA STAC query. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    # abort if no stac features found
     if len(stac_features) == 0:
         arcpy.AddWarning('No STAC features were found.')
         return
+
+    time.sleep(1)
 
     # endregion
 
@@ -133,78 +136,160 @@ def execute(
     tmp_folder = os.path.join(root_folder, 'tmp')
 
     shared.drop_temp_folder(tmp_folder)
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
+    shared.create_temp_folder(tmp_folder)
 
     try:
-        # create mask info
-        mask = web.Mask('fmask',
-                        quality_flags,
-                        in_max_out_of_bounds,
-                        in_max_invalid_pixels)
-
-        # reproject output bbox to requested, convert stac features to downloads
         out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
-        downloads = web.convert_stac_features_to_downloads(stac_features,
-                                                           assets,
-                                                           mask,
-                                                           out_bbox,
-                                                           out_epsg,
-                                                           out_res,
-                                                           out_nodata,
-                                                           tmp_folder,
-                                                           out_extension)
+        stac_downloads = stac.convert_stac_feats_to_stac_downloads(stac_features,
+                                                                   assets,
+                                                                   mask_algorithm,
+                                                                   quality_flags,
+                                                                   max_out_of_bounds,
+                                                                   max_invalid_pixels,
+                                                                   out_bbox,
+                                                                   out_epsg,
+                                                                   out_res,
+                                                                   out_nodata,
+                                                                   out_dtype,
+                                                                   tmp_folder)
+
     except Exception as e:
-        arcpy.AddError('Error occurred during download creation. See messages.')
+        arcpy.AddError('Error occurred during STAC download preparation. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    downloads = web.group_downloads_by_solar_day(downloads)
+    stac_downloads = stac.group_stac_downloads_by_solar_day(stac_downloads)
 
     if in_include_slc_off_data is False:
-        downloads = web.remove_slc_off(downloads)
+        stac_downloads = stac.remove_stac_downloads_with_slc_off(stac_downloads)
 
-    if len(downloads) == 0:
+    if len(stac_downloads) == 0:
         arcpy.AddWarning('No valid downloads were found.')
         return
+
+    time.sleep(1)
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region DOWNLOAD WCS DATA
+    # region DOWNLOAD WCS MASK DATA
 
-    arcpy.SetProgressor('step', 'Downloading...', 0, len(downloads), 1)
+    arcpy.SetProgressor('step', 'Downloading and validating mask data...', 0, len(stac_downloads), 1)
 
     try:
         i = 0
-        with ThreadPoolExecutor(max_workers=num_cpu) as pool:
-            for result in pool.map(web.validate_and_download, downloads):
-                arcpy.AddMessage(result)
+        with ThreadPoolExecutor(max_workers=max_threads) as pool:
+            futures = []
+            for stac_download in stac_downloads:
+                task = pool.submit(cube.worker_read_mask_and_validate, stac_download)
+                futures.append(task)
+
+            for future in as_completed(futures):
+                arcpy.AddMessage(future.result())
 
                 i += 1
                 if i % 1 == 0:
                     arcpy.SetProgressorPosition(i)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while downloading. See messages.')
+        arcpy.AddError('Error occurred while downloading and validating mask data. See messages.')
         arcpy.AddMessage(str(e))
         return
+
+    stac_downloads = cube.remove_mask_invalid_downloads(stac_downloads)
+
+    if len(stac_downloads) == 0:
+        arcpy.AddWarning('No valid downloads were found.')
+        return
+
+    time.sleep(1)
+
+    arcpy.ResetProgressor()
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region COMBINE NETCDFS
+    # region DOWNLOAD WCS VALID DATA
 
-    arcpy.SetProgressor('default', 'Combining NetCDF files...')
+    arcpy.SetProgressor('step', 'Downloading valid data...', 0, len(stac_downloads), 1)
 
     try:
-        web.combine_ncs_via_dask(folder=tmp_folder,
-                                 out_nc=out_nc)
+        i = 0
+        with ThreadPoolExecutor(max_workers=max_threads) as pool:
+            futures = []
+            for download in stac_downloads:
+                task = pool.submit(cube.worker_read_bands_and_export, download)
+                futures.append(task)
+
+            for future in as_completed(futures):
+                arcpy.AddMessage(future.result())
+
+                i += 1
+                if i % 1 == 0:
+                    arcpy.SetProgressorPosition(i)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while combining NetCDF files. See messages.')
+        arcpy.AddError('Error occurred while downloading valid data. See messages.')
         arcpy.AddMessage(str(e))
         return
+
+    time.sleep(1)
+
+    arcpy.ResetProgressor()
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region CLEAN AND COMBINE NETCDFS
+
+    arcpy.SetProgressor('default', 'Cleaning and combining NetCDFs...')
+
+    try:
+        ds = cube.fix_xr_meta_and_combine(stac_downloads)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while cleaning and combining NetCDFs. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    time.sleep(1)
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region MASK OUT INVALID NETCDF PIXELS
+
+    arcpy.SetProgressor('default', 'Masking out invalid NetCDF pixels...')
+
+    try:
+        ds = cube.apply_xr_mask(ds,
+                                quality_flags,
+                                out_nodata,
+                                in_keep_mask)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while masking out invalid NetCDF pixels. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    time.sleep(1)
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region EXPORT COMBINED NETCDF
+
+    arcpy.SetProgressor('default', 'Exporting combined NetCDF...')
+
+    try:
+        cube.export_xr_to_nc(ds, out_nc)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while exporting combined NetCDF. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    time.sleep(1)
 
     # endregion
 
@@ -213,7 +298,10 @@ def execute(
 
     arcpy.SetProgressor('default', 'Cleaning up environment...')
 
+    cube.safe_close_ncs(tmp_folder)  # TODO: surely there is better way
     shared.drop_temp_folder(tmp_folder)
+
+    time.sleep(1)
 
     # endregion
 

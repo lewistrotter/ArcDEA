@@ -39,13 +39,13 @@ def execute(
     in_max_threads = parameters[14].value
 
     # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\perth_sa.shp'
+    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
     # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2023, 1, 1)
+    # in_start_date = datetime.datetime(2022, 1, 1)
     # in_end_date = datetime.datetime.now()
     # in_collections = "'Sentinel 2A';'Sentinel 2B'"
-    # in_band_assets = "'Blue';'Green';'Red'"
-    # in_mask_algorithm = 'S2Cloudless' #'fMask'  # 'S2Cloudless'
+    # in_band_assets = "'Blue';'Green';'Red';'NIR 1'"
+    # in_mask_algorithm = 'S2Cloudless' #'fMask'  # 'S2Cloudless'  # FIXME: s2cloudless removes a lot of images... even at 50%!
     # in_quality_flags = "Valid"  #"'Valid';'Shadow';'Snow';'Water'"  # "Valid"
     # in_max_out_of_bounds = 10
     # in_max_invalid_pixels = 5
@@ -62,7 +62,6 @@ def execute(
 
     arcpy.SetProgressor('default', 'Preparing environment...')
 
-    # allow output overwrites
     arcpy.env.overwriteOutput = True
 
     time.sleep(1)
@@ -74,37 +73,28 @@ def execute(
 
     arcpy.SetProgressor('default', 'Preparing DEA STAC query parameters...')
 
-    # convert featureclass to bbox and epsg
     fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
     fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
 
-    # convert start and end datetime to date strings
     start_date = in_start_date.date().strftime('%Y-%m-%d')
     end_date = in_end_date.date().strftime('%Y-%m-%d')
 
-    # convert collections and assets to lists
     collections = shared.prepare_collections(in_collections)
     assets = shared.prepare_assets(in_band_assets)
 
-    # convert mask algorithm and flags to list, append to assets
     quality_flags = shared.prepare_quality_flags(in_quality_flags, in_mask_algorithm)
     mask_algorithm = shared.prepare_mask_algorithm(in_mask_algorithm)
-    assets = shared.append_mask_band(assets, mask_algorithm)
+    assets = shared.append_mask_band(assets, mask_algorithm)  # append mask band to user bands
 
-    # convert max out of bounds, invalid pixel values
     max_out_of_bounds = shared.prepare_max_out_of_bounds(in_max_out_of_bounds)
     max_invalid_pixels = shared.prepare_max_invalid_pixels(in_max_invalid_pixels)
 
-    # convert nodata, epsg and resolution to numerics
     out_nodata = in_nodata_value
     out_epsg = shared.prepare_spatial_reference(in_srs)
     out_res = shared.prepare_resolution(in_res, out_epsg)
+    out_dtype = 'int16'  # output dtype always int16 for baseline
 
-    # set output dtype (always int16 for baseline)
-    out_dtype = 'int16'
-
-    # validate num threads, if none will use num of cores - 1
-    max_threads = shared.prepare_max_threads(in_max_threads)
+    max_threads = shared.prepare_max_threads(in_max_threads)  # if user gave none, uses max cpus - 1
 
     time.sleep(1)
 
@@ -128,7 +118,6 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
-    # abort if no stac features found
     if len(stac_features) == 0:
         arcpy.AddWarning('No STAC features were found.')
         return
@@ -149,7 +138,6 @@ def execute(
     shared.create_temp_folder(tmp_folder)
 
     try:
-        # reproject output bbox to requested, convert stac to download objects
         out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
         stac_downloads = stac.convert_stac_feats_to_stac_downloads(stac_features,
                                                                    assets,
@@ -313,4 +301,4 @@ def execute(
 
     # endregion
 
-#execute(None)
+# execute(None)

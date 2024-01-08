@@ -57,21 +57,19 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
-    # check if dimensions correct
     if 'x' not in ds or 'y' not in ds:
         arcpy.AddError('No x, y dimensions found in NetCDF.')
         return
 
-    # check if netcdf has nodata attribute
     nodata = ds.attrs.get('nodata')
     if nodata is None:
         arcpy.AddError('No NoData attribute in NetCDF.')
         return
 
-    # check xr has collection coordinates
-    if 'collection' not in ds:
-        arcpy.AddError('No collections coordinates in NetCDF.')
-        return
+    # TODO: remove if decide not to use collections any more
+    #if 'collection' not in ds:
+        #arcpy.AddError('No collections coordinates in NetCDF.')
+        #return
 
     time.sleep(1)
 
@@ -82,25 +80,27 @@ def execute(
 
     arcpy.SetProgressor('default', 'Preparing NetCDF data...')
 
-    # extract attributes
     ds_attrs = ds.attrs
     ds_band_attrs = ds[list(ds)[0]].attrs
     ds_spatial_ref_attrs = ds['spatial_ref'].attrs
 
-    # extract collections, ensure it's a list
-    collections = list(set(ds['collection'].to_numpy()))
-    if not isinstance(collections, list):
-        collections = [collections]
+    # TODO: remove if decide not to use collections any more
+    #collections = list(set(ds['collection'].to_numpy()))
+    #if not isinstance(collections, list):
+        #collections = [collections]
 
-    # get collection
-    collection = ';'.join([c for c in collections])
-    if 'ls' in collection:
-        collection = 'ls'
-    elif 's2' in collection:
-        collection = 's2'
-    else:
-        arcpy.AddError('Could not find collection.')
-        return
+    #collection = ';'.join([c for c in collections])
+    #if 'ls' in collection:
+        #collection = 'ls'
+    #elif 's2' in collection:
+        #collection = 's2'
+    #else:
+        #arcpy.AddError('Could not find collection.')
+        #return
+
+    collection = ds.attrs.get('collection')
+    if collection not in ['ls', 's2']:
+        raise AttributeError('Collection not Landsat or Sentinel-2.')
 
     # set all numeric nodata to nan
     ds = ds.where(ds != nodata)
@@ -239,6 +239,9 @@ def execute(
     for var in ds:
         ds[var].attrs = ds_band_attrs
 
+    # update processing chain
+    ds.attrs['processing'] += ';' + 'index'
+
     time.sleep(1)
 
     # endregion
@@ -249,8 +252,9 @@ def execute(
     arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
+        # TODO: enable if using collections
         # cast collections to string to prevent warning
-        ds['collection'] = ds['collection'].astype(str)
+        #ds['collection'] = ds['collection'].astype(str)
 
         ds.to_netcdf(out_nc)
 
@@ -268,7 +272,7 @@ def execute(
 
     #arcpy.SetProgressor('default', 'Cleaning up environment...')
 
-    time.sleep(1)
+    # time.sleep(1)
 
     # endregion
 

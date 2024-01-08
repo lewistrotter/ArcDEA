@@ -200,7 +200,9 @@ def prepare_max_threads(max_threads: Union[int, None]) -> int:
     return max_threads
 
 
-def get_bbox_from_featureclass(fc: str) -> tuple:
+def get_bbox_from_featureclass(
+        fc: str
+) -> tuple[float, float, float, float]:
     """
     Takes a featureclass from geoprocessor or string path representing a shapefile and
     extracts bounding box from extent.

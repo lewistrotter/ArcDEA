@@ -195,7 +195,7 @@ class Download:
         """
 
         if self.collection is None or self._date is None:
-            return False
+            return False  # FIXME: this should throw an error, no?
 
         if 'ls7e' in self.collection and self._date >= '2003-05-31':
             return True
@@ -461,14 +461,14 @@ def fix_xr_meta_and_combine(downloads: list[Download]) -> xr.Dataset:
 
     ds_list = []
     for download in downloads:
-        # TODO: might be better to do like slc off remove outside func
+        # TODO: might be better to remove unsuccessful outside funcs... think about it
         if download.is_download_successful() is not True:
             continue
 
         fp = download.build_output_filepath()
         ds = xr.open_dataset(fp,
                              chunks=-1,
-                             mask_and_scale=False)  # mask and scale keeps int16
+                             mask_and_scale=False)  # mask and scale keeps type as int16
 
         if 'lat' in ds and 'lon' in ds:
             ds = ds.rename({'lat': 'y', 'lon': 'x'})
@@ -490,7 +490,8 @@ def fix_xr_meta_and_combine(downloads: list[Download]) -> xr.Dataset:
             'grid_mapping_name': crs_name
         }
 
-        ds = ds.assign_coords({'collection': download.collection})
+        # TODO: decide whether or not to keep this, will be stripped during reducers
+        #ds = ds.assign_coords({'collection': download.collection})
 
         if 'time' not in ds:
             dt = pd.to_datetime(download.get_date(), format='%Y-%m-%d')
@@ -517,10 +518,21 @@ def fix_xr_meta_and_combine(downloads: list[Download]) -> xr.Dataset:
                 real_band = 'mask'
             ds = ds.rename({band: real_band})
 
+        # TODO: put into a shared func
+        if download.collection.startswith('ga_ls'):
+            collection = 'ls'
+        elif download.collection.startswith('ga_s2'):
+            collection = 's2'
+        else:
+            raise AttributeError(f'Platform: {download.collection} not supported.')
+
+        # TODO: this may be redundant as concat will just take first dataset index
+        # TODO: use a gloval func outside of this func instead
         ds.attrs = {
             'crs': f'EPSG:{download.out_epsg}',
             'grid_mapping': 'spatial_ref',
             'nodata': download.out_nodata,
+            'collection': collection,
             'created_by': 'arcdea',
             'processing': 'raw'
         }
