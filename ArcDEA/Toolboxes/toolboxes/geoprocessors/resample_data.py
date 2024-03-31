@@ -1,4 +1,3 @@
-
 def execute(
         parameters
 ):
@@ -8,6 +7,8 @@ def execute(
     import time
     import xarray as xr
     import arcpy
+
+    from scripts import cube
 
     # endregion
 

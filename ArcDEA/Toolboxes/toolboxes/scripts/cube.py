@@ -468,7 +468,7 @@ def fix_xr_meta_and_combine(downloads: list[Download]) -> xr.Dataset:
         fp = download.build_output_filepath()
         ds = xr.open_dataset(fp,
                              chunks=-1,
-                             mask_and_scale=False)  # mask and scale keeps type as int16
+                             mask_and_scale=False)
 
         if 'lat' in ds and 'lon' in ds:
             ds = ds.rename({'lat': 'y', 'lon': 'x'})

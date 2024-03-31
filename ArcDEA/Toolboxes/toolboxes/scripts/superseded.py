@@ -636,3 +636,41 @@
 #     z = z > 1.58
 #
 #     ds[var] = da.where(~z)  # 3.29
+
+
+# try:
+#     for var in ds:
+#
+#         da = ds[var]
+#
+#         # get std of entire ts vector and multi by user factor
+#         da_cut = da.std('time', skipna=True) * in_spike_cutoff # FIXME: this is causing a runtimewarning
+
+#         # append first/last values to array to pad edges
+#         da_ext = xr.concat([da[-win_cen:], da, da[:win_cen]], dim='time')
+#
+#         # generate windows of same size
+#         da_win = da_ext.rolling(time=2 * win_cen + 1, center=True)
+#         da_win = da_win.construct('win')
+#
+#         # xr rolling pads a few wins at start/end with nans, remove them
+#         da_win = da_win[win_cen:-win_cen]
+#
+#         # get center win values (same as da) and minus win median
+#         da_med = np.abs(da - da_win.median('win', skipna=True))  # TODO: this is slow
+#
+#         # get mean, max of win l, r vals and +/- cutoff, dont remove nans like timesat
+#         lr = [win_cen - 1, win_cen + 1]
+#         da_avg = da_win[:, :, :, lr].mean('win', skipna=True) - da_cut
+#         da_max = da_win[:, :, :, lr].max('win', skipna=True) + da_cut
+#
+#         # get idxs where med > std dev and cen (same as da) neighbors < avg or > max
+#         da_err = (da_med >= da_cut) & ((da < da_avg) | (da > da_max))
+#
+#         # mask error indicies as nan
+#         ds[var] = da.where(~da_err)
+#
+# except Exception as e:
+#     arcpy.AddError('Error occurred while removing outliers. See messages.')
+#     arcpy.AddMessage(str(e))
+#     return
