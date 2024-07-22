@@ -35,7 +35,7 @@
 #         self.description = ''
 #         self.canRunInBackground = False
 #
-#     def getParameterInfo(self):
+#     def getParameterInfo(self): 
 #         params = []
 #
 #         p00 = arcpy.Parameter(displayName='Input Extent',
