@@ -1,5 +1,5 @@
 ﻿<ArcGIS defaultAssembly="ArcDEA.dll" defaultNamespace="ArcDEA" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
-  <AddInInfo id="{ee5428c7-5f18-46b0-a69b-e3ffcf872829}" version="0.1" desktopVersion="3.0.36057">
+  <AddInInfo id="{ee5428c7-5f18-46b0-a69b-e3ffcf872829}" version="0.1" desktopVersion="3.3.0">
     <Name>ArcDEA</Name>
     <Description>ArcDEA description</Description>
     <Image>Images\AddinDesktop32.png</Image>
