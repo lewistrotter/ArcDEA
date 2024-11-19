@@ -1,6 +1,6 @@
 # ArcDEA <img src="ArcDEA/Images/arcdea_logo.png" align="right" height="150" />
 
-ArcDEA is the unofficial Digital Earth Australia (DEA) ArcGIS Pro plugin. It intends to provide easy, interactive and efficient access to the Digital Earth Australia (DEA) public data repository. It is completely free and open source.
+ArcDEA is the unofficial Digital Earth Australia (DEA) ArcGIS Pro plugin. It was developed to provide user-friendly, interactive and efficient access to the Digital Earth Australia (DEA) public data repository. ArcDEA is completely free and open-source.
 
 ## Features
 * user-friendly interface for downloading bulk analysis ready Landsat 5-9, Sentinel 2 and [other](https://www.dea.ga.gov.au/products) products.
