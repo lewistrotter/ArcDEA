@@ -13,7 +13,7 @@ ArcDEA is the unofficial Digital Earth Australia (DEA) ArcGIS Pro plugin. It was
 <img src="ArcDEA/Screenshots/ArcDEA_alpha_screenshot_v0008.png" height="400" />
 
 ## Requirements
-* ArcGIS Pro version 3.3 or above.
+* ArcGIS Pro version 3.4 or above.
 * Minimum 16gb RAM (>= 32gb recommended).
 * Internet connection.
 
