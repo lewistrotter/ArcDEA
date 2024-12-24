@@ -38,14 +38,14 @@ namespace ArcDEA
                 return;
 
             // Create Convert NetCDF to Rasters gallery item
-            Add(new GalleryItem(text: "NetCDF to Rasters",
+            Add(new GalleryItem(text: "Cube to Rasters",
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
                                 tooltip: "Convert a NetCDF to a folder of rasters."));
 
             // Create Convert NetCDF to Cloud Raster gallery item
-            Add(new GalleryItem(text: "NetCDF to Cloud Raster",
+            Add(new GalleryItem(text: "Cube to Cloud Raster Format",
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
-                                tooltip: "Convert a NetCDF to a Cloud Raster."));
+                                tooltip: "Convert a NetCDF to the ESRI Cloud Raster Format."));
 
             //// Create Convert NetCDF to Geodatabase gallery item
             //Add(new GalleryItem(text: "NetCDF to Geodatabase",
@@ -60,11 +60,11 @@ namespace ArcDEA
         {
             string toolname = null;
 
-            if (item.Text == "NetCDF to Rasters")
+            if (item.Text == "Cube to Rasters")
             {
                 toolname = "ArcDEA.ConvertNetCDFToRasters";
             }
-            else if (item.Text == "NetCDF to Cloud Raster")
+            else if (item.Text == "Cube to Cloud Raster Format")
             {
                 toolname = "ArcDEA.ConvertNetCDFToCloudRaster";
             }

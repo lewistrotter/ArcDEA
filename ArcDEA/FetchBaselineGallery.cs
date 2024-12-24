@@ -22,15 +22,20 @@ namespace ArcDEA
             if (_isInitialized)
                 return;
 
-            // Create Landsat 5, 7, 8, 9 Collection 3 gallery item
-            Add(new GalleryItem(text: "Landsat Baseline Collection 3", 
+            // Create Landsat Collection 3 (baseline) gallery item
+            Add(new GalleryItem(text: "Landsat Collection 3 (Baseline)", 
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null, 
-                                tooltip: "Landsat 5, 7, 8, 9 Analysis Ready Data."));
+                                tooltip: "Landsat 5, 7, 8 and 9 NBART Collection 3."));
+
+            // Create Landsat Collection 3 (GeoMAD) gallery item
+            Add(new GalleryItem(text: "Landsat Collection 3 (GeoMAD)",
+                                icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
+                                tooltip: "Landsat 5, 7, 8 and 9 NBART Collection 3 GeoMAD."));
 
             // Create Sentinel 2A, 2B Collection 3 gallery item
-            Add(new GalleryItem(text:"Sentinel 2 Baseline Collection 3", 
+            Add(new GalleryItem(text: "Sentinel 2 Collection 3 (Baseline)", 
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
-                                tooltip: "Sentinel 2A, 2B Analysis Ready Data."));
+                                tooltip: "Sentinel 2A and 2B NBART Collection 3."));
 
             _isInitialized = true;
         }
@@ -39,11 +44,17 @@ namespace ArcDEA
         {
             string toolname = null;
 
-            if (item.Text == "Landsat Baseline Collection 3")
+            if (item.Text == "Landsat Collection 3 (Baseline)")
             {
                 toolname = "ArcDEA.FetchLandsatBaselineData";
             }
-            else if (item.Text == "Sentinel 2 Baseline Collection 3")
+
+            else if (item.Text == "Landsat Collection 3 (GeoMAD)")
+            {
+                toolname = "ArcDEA.FetchLandsatGeomedData";
+            }
+
+            else if (item.Text == "Sentinel 2 Collection 3 (Baseline)")
             {
                 toolname = "ArcDEA.FetchSentinel2BaselineData";
             }

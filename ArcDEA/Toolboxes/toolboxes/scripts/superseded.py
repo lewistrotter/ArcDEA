@@ -674,3 +674,28 @@
 #     arcpy.AddError('Error occurred while removing outliers. See messages.')
 #     arcpy.AddMessage(str(e))
 #     return
+
+
+# # get global attributes
+# ds_attrs = ds.attrs
+# ds_sref_attrs = ds['spatial_ref'].attrs
+# # ds_band_attrs = ds[list(ds)[0]].attrs  # TODO: may reconstruct after index
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # region FINALISE NETCDF
+#
+# arcpy.SetProgressor('default', 'Finalising NetCDF...')
+#
+# # TODO: set nodata back to original value?
+#
+# ds.attrs = ds_attrs
+# ds['spatial_ref'].attrs = ds_spatial_ref_attrs
+# for var in ds:
+#     ds[var].attrs = ds_band_attrs
+#
+# ds.attrs['processing'] += ';' + 'index'
+#
+# time.sleep(1)
+#
+# # endregion
+#

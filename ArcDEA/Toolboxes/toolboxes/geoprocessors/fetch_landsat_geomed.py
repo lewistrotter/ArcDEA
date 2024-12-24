@@ -1,49 +1,32 @@
 
-def execute(
-        parameters
-):
+def execute(parameters):
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
 
-    import os
-    import shutil
-    import datetime
+    import time
     import arcpy
+    import cuber
+    import ui
 
-    from concurrent.futures import ThreadPoolExecutor
-
-    from scripts import shared
-    from scripts import constants
-    from scripts import web
+    from cuber import shared
+    from dask.callbacks import Callback
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region EXTRACT PARAMETERS
 
-    # uncomment these when not testing
-    in_lyr = parameters[0].valueAsText
+    ext = parameters[0].value
     out_nc = parameters[1].valueAsText
-    in_start_year = parameters[2].value
-    in_end_year = parameters[3].value
-    in_collections = parameters[4].valueAsText
-    in_band_assets = parameters[5].valueAsText
-    in_include_slc_off_data = parameters[6].value
-    in_nodata_value = parameters[7].value
-    in_srs = parameters[8].value
-    in_res = parameters[9].value
-
-    # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\perth_sa.shp'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls_gm.nc'
-    # in_start_year = 1990
-    # in_end_year = 2023
-    # in_collections = "'Landsat 5 TM';'Landsat 7 ETM+';'Landsat 8 OLI'"
-    # in_band_assets = "'Blue';'Green';'Red';NIR;SWIR 1;SWIR 2;'EMAD';'SMAD';BCMAD"
-    # in_include_slc_off_data = False
-    # in_nodata_value = -999
-    # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
-    # in_res = 30
+    start_year = parameters[2].valueAsText
+    end_year = parameters[3].valueAsText
+    collections = parameters[4].value
+    assets = parameters[5].value
+    remove_slc_off = parameters[6].value
+    out_srs = parameters[7].value
+    out_res = parameters[8].value
+    max_threads = parameters[9].value
 
     # endregion
 
@@ -53,40 +36,14 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    num_cpu = shared.detect_num_cores(modify_percent=0.90)  # TODO: set this via ui
+    cuber.set_messenger(arcpy.AddMessage)
 
-    collections_map = constants.GEOMED_COLLECTIONS
-    assets_map = constants.GEOMED_BAND_ASSETS
+    class ArcProgressBar(Callback):
+        def _posttask(self, key, result, dsk, state, worker_id):
+            if key[0].startswith('block-') and 'gdal_reader_func' in key[0]:
+                arcpy.SetProgressorPosition()
 
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARE QUERY PARAMETERS
-
-    arcpy.SetProgressor('default', 'Preparing DEA STAC query parameters...')
-
-    fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
-    fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
-
-    start_date = f'{in_start_year}-01-01'
-    end_date = f'{in_end_year}-12-31'
-
-    collections = shared.unpack_multivalue_param(in_collections)
-    collections = [collections_map[_] for _ in collections]
-
-    assets = shared.unpack_multivalue_param(in_band_assets)
-    assets = [assets_map[_] for _ in assets]
-
-    out_nodata = in_nodata_value
-
-    out_epsg = int(in_srs.split(': ')[-1].replace(')', ''))
-
-    out_res = in_res
-    if out_epsg == 4326:
-        out_res *= 9.466833186042272E-06
-
-    out_nc = out_nc
-    out_extension = '.nc'
+    time.sleep(1)
 
     # endregion
 
@@ -95,142 +52,197 @@ def execute(
 
     arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
 
+    in_bbox = (ext.XMin, ext.YMin, ext.XMax, ext.YMax)
+    in_epsg = ext.spatialReference.factoryCode
+
+    out_epsg = ui.extract_epsg_code(out_srs)
+    out_bbox = shared.reproject_bbox(in_bbox, in_epsg, out_epsg)
+
+    # TODO: renable once projectas working
+    #ext = ext.projectAs(arcpy.SpatialReference(out_epsg))
+    #out_bbox = (ext.XMin, ext.YMin, ext.XMax, ext.YMax)
+
+    if out_epsg == 4326:
+        out_res *= 9.466833186042272E-06
+
+    start_date = f'{start_year}-01-01'
+    end_date = f'{end_year}-12-31'
+
+    collections = ui.convert_collections('ga_ls_gm_ard_3', collections)
+    assets = ui.convert_assets('ga_ls_gm_ard_3', assets)
+
     try:
-        # reproject stac bbox to wgs 1984, fetch all available stac items
-        stac_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, 4326)
-        stac_features = web.fetch_all_stac_features(collections,
-                                                    start_date,
-                                                    end_date,
-                                                    stac_bbox,
-                                                    100)
+        ds = cuber.fetch(
+            collections=collections,
+            assets=assets,
+            date=(start_date, end_date),
+            out_bbox=out_bbox,
+            out_epsg=out_epsg,
+            out_res=out_res,
+            remove_slc_off=remove_slc_off,
+            ignore_errors=True  # TODO: add to ui
+        )
+
     except Exception as e:
         arcpy.AddError('Error occurred during DEA STAC query. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    # abort if no stac features found
-    if len(stac_features) == 0:
+    if 'time' not in ds.dims or len(ds['time']) == 0:
         arcpy.AddWarning('No STAC features were found.')
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARING STAC FEATURES
+    # region DOWNLOAD WCS VALID DATA
 
-    arcpy.SetProgressor('default', 'Preparing downloads...')
-
-    root_folder = os.path.dirname(out_nc)
-    tmp_folder = os.path.join(root_folder, 'tmp')
-
-    shared.drop_temp_folder(tmp_folder)
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
+    n_dls = shared.count_xr_chunked(ds)
+    arcpy.SetProgressor('step', 'Downloading valid data...', 0, n_dls, 1)
 
     try:
-        # create mask info (none for geomed)
-        mask = None
+        with ArcProgressBar():
+            ds.load(num_workers=max_threads)
 
-        # reproject output bbox to requested, convert stac features to downloads
-        out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
-        downloads = web.convert_stac_features_to_downloads(stac_features,
-                                                           assets,
-                                                           mask,
-                                                           out_bbox,
-                                                           out_epsg,
-                                                           out_res,
-                                                           out_nodata,
-                                                           tmp_folder,
-                                                           out_extension)
     except Exception as e:
-        arcpy.AddError('Error occurred during download creation. See messages.')
+        arcpy.AddError('Error occurred while downloading valid data. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    downloads = web.group_downloads_by_solar_day(downloads)
+    time.sleep(1)
 
-    if in_include_slc_off_data is False:
-        downloads = web.remove_slc_off(downloads)
-
-    if len(downloads) == 0:
-        arcpy.AddWarning('No valid downloads were found.')
-        return
+    arcpy.ResetProgressor()
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region DOWNLOAD WCS DATA
+    # region CONFORM DATA TYPES
 
-    arcpy.SetProgressor('step', 'Downloading...', 0, len(downloads), 1)
+    arcpy.SetProgressor('default', 'Conforming data types...')
 
     try:
-        i = 0
-        with ThreadPoolExecutor(max_workers=num_cpu) as pool:
-            for result in pool.map(web.download, downloads):
-                arcpy.AddMessage(result)
-
-                i += 1
-                if i % 1 == 0:
-                    arcpy.SetProgressorPosition(i)
+        ds = shared.elevate_xr_dtypes(ds)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while downloading. See messages.')
+        arcpy.AddError('Error occurred while conforming data types. See messages.')
         arcpy.AddMessage(str(e))
         return
 
+    time.sleep(1)
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CONFIRM BANDS NAMES BEFORE COMBINE
+    # region EXPORT NETCDF
 
-    arcpy.SetProgressor('default', 'Conforming band names...')
-
-    rename_map = {
-        'blue':  'nbart_blue',
-        'green': 'nbart_green',
-        'red':   'nbart_red',
-        'nir':   'nbart_nir',
-        'swir1': 'nbart_swir_1',
-        'swir2': 'nbart_swir_2',
-        'edev':  'nbart_edev',
-        'sdev':  'nbart_sdev',
-        'bcdev': 'nbart_bcdev'
-    }
+    arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
-        web.rename_bands_in_netcdf_files(folder=tmp_folder,
-                                         rename_map=rename_map)
+        ds.to_netcdf(out_nc)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while renaming NetCDF files. See messages.')
+        arcpy.AddError('Error occurred while exporting NetCDF. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region COMBINE NETCDFS
-
-    arcpy.SetProgressor('default', 'Combining NetCDF files...')
-
-    try:
-        web.combine_ncs_via_dask(folder=tmp_folder,
-                                 out_nc=out_nc)
-
-    except Exception as e:
-        arcpy.AddError('Error occurred while combining NetCDF files. See messages.')
-        arcpy.AddMessage(str(e))
-        return
+    time.sleep(1)
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN UP ENVIRONMENT
+    # region WRAP UP
 
-    arcpy.SetProgressor('default', 'Cleaning up environment...')
+    arcpy.SetProgressor('default', 'Wrapping up...')
 
-    shared.drop_temp_folder(tmp_folder)
+    ui.print_dates(ds)
+
+    time.sleep(1)
 
     # endregion
 
-#execute(None)
+    return
+
+
+def _make_test_params():
+    """For testing outside ArcGIS Pro only."""
+
+    import arcpy
+
+    p00 = arcpy.Parameter(name='in_extent',
+                          datatype='GPExtent',
+                          parameterType='Required',
+                          direction='Input')
+
+    p01 = arcpy.Parameter(name='out_nc',
+                          datatype='DEFile',
+                          parameterType='Required',
+                          direction='Output')
+
+    p02 = arcpy.Parameter(name='in_start_year',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+
+    p03 = arcpy.Parameter(name='in_end_year',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+
+    p04 = arcpy.Parameter(name='in_collections',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input',
+                          multiValue=True)
+    p04.filter.type = 'ValueList'
+
+    p05 = arcpy.Parameter(name='in_assets',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input',
+                          multiValue=True)
+    p05.filter.type = 'ValueList'
+
+    p06 = arcpy.Parameter(name='in_remove_slc_off',
+                          datatype='GPBoolean',
+                          parameterType='Required',
+                          direction='Input')
+
+    p07 = arcpy.Parameter(name='in_srs',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p07.filter.type = 'ValueList'
+
+    p08 = arcpy.Parameter(name='in_res',
+                          datatype='GPDouble',
+                          parameterType='Required',
+                          direction='Input')
+
+    p09 = arcpy.Parameter(name='in_max_threads',
+                          datatype='GPLong',
+                          parameterType='Optional',
+                          direction='Input')
+    p09.filter.type = 'Range'
+
+    bbox = (-1516346, -3589160, -1514698, -3586324)
+    srs = arcpy.SpatialReference(3577)
+
+    p00.value = arcpy.Extent(*bbox, spatial_reference=srs)
+    p01.value = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
+    p02.value = 2008
+    p03.value = 2024
+    p04.value = ['Landsat 7 ETM+', 'Landsat 8 & 9 OLI']
+    p05.value = ['Blue', 'Green', 'Red', 'NIR', 'SMAD']
+    p06.value = True
+    p07.value = 'GDA94 Australia Albers (EPSG: 3577)'
+    p08.value = 30
+    p09.value = None
+
+
+    params = [p00, p01, p02, p03, p04, p05, p06, p07, p08, p09]
+
+    return params
+
+# execute(_make_test_params())  # testing, comment out when done

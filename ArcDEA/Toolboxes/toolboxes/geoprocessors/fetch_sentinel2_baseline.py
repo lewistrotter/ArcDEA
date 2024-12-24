@@ -1,59 +1,36 @@
-def execute(
-        parameters
-):
+
+def execute(parameters):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
 
-    import os
     import time
-    import datetime
     import arcpy
+    import cuber
+    import ui
 
-    from concurrent.futures import ThreadPoolExecutor
-    from concurrent.futures import as_completed
-
-    from scripts import stac
-    from scripts import cube
-    from scripts import shared
+    from cuber import shared
+    from dask.callbacks import Callback
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region EXTRACT PARAMETERS
 
-    # uncomment these when not testing
-    in_lyr = parameters[0].valueAsText
+    ext = parameters[0].value
     out_nc = parameters[1].valueAsText
-    in_start_date = parameters[2].value
-    in_end_date = parameters[3].value
-    in_collections = parameters[4].valueAsText
-    in_band_assets = parameters[5].valueAsText
-    in_mask_algorithm = parameters[6].value
-    in_quality_flags = parameters[7].valueAsText
-    in_max_out_of_bounds = parameters[8].value
-    in_max_invalid_pixels = parameters[9].value
-    in_keep_mask = parameters[10].value
-    in_nodata_value = parameters[11].value
-    in_srs = parameters[12].value
-    in_res = parameters[13].value
-    in_max_threads = parameters[14].value
-
-    # uncomment these when testing
-    # in_lyr = r'C:\Users\Lewis\Desktop\arcdea\studyarea.shp'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
-    # in_start_date = datetime.datetime(2022, 1, 1)
-    # in_end_date = datetime.datetime.now()
-    # in_collections = "'Sentinel 2A';'Sentinel 2B'"
-    # in_band_assets = "'Blue';'Green';'Red';'NIR 1'"
-    # in_mask_algorithm = 'S2Cloudless' #'fMask'  # 'S2Cloudless'  # FIXME: s2cloudless removes a lot of images... even at 50%!
-    # in_quality_flags = "Valid"  #"'Valid';'Shadow';'Snow';'Water'"  # "Valid"
-    # in_max_out_of_bounds = 10
-    # in_max_invalid_pixels = 5
-    # in_keep_mask = False
-    # in_nodata_value = -999
-    # in_srs = 'GDA94 Australia Albers (EPSG: 3577)'  # 'WGS84 (EPSG: 4326)'
-    # in_res = 10
-    # in_max_threads = None
+    start_date = parameters[2].value
+    end_date = parameters[3].value
+    collections = parameters[4].value
+    assets = parameters[5].value
+    mask_algorithm = parameters[6].value
+    quality_flags = parameters[7].value
+    remove_mask = parameters[8].value
+    max_empty = parameters[9].value
+    max_invalid = parameters[10].value
+    out_nodata = parameters[11].value
+    out_srs = parameters[12].value
+    out_res = parameters[13].value
+    max_threads = parameters[14].value
 
     # endregion
 
@@ -63,38 +40,12 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
+    cuber.set_messenger(arcpy.AddMessage)
 
-    time.sleep(1)
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARE PARAMETERS
-
-    arcpy.SetProgressor('default', 'Preparing DEA STAC query parameters...')
-
-    fc_bbox = shared.get_bbox_from_featureclass(in_lyr)
-    fc_epsg = shared.get_epsg_from_featureclass(in_lyr)
-
-    start_date = in_start_date.date().strftime('%Y-%m-%d')
-    end_date = in_end_date.date().strftime('%Y-%m-%d')
-
-    collections = shared.prepare_collections(in_collections)
-    assets = shared.prepare_assets(in_band_assets)
-
-    quality_flags = shared.prepare_quality_flags(in_quality_flags, in_mask_algorithm)
-    mask_algorithm = shared.prepare_mask_algorithm(in_mask_algorithm)
-    assets = shared.append_mask_band(assets, mask_algorithm)  # append mask band to user bands
-
-    max_out_of_bounds = shared.prepare_max_out_of_bounds(in_max_out_of_bounds)
-    max_invalid_pixels = shared.prepare_max_invalid_pixels(in_max_invalid_pixels)
-
-    out_nodata = in_nodata_value
-    out_epsg = shared.prepare_spatial_reference(in_srs)
-    out_res = shared.prepare_resolution(in_res, out_epsg)
-    out_dtype = 'int16'  # output dtype always int16 for baseline
-
-    max_threads = shared.prepare_max_threads(in_max_threads)  # if user gave none, uses max cpus - 1
+    class ArcProgressBar(Callback):
+        def _posttask(self, key, result, dsk, state, worker_id):
+            if key[0].startswith('block-') and 'gdal_reader_func' in key[0]:
+                arcpy.SetProgressorPosition()
 
     time.sleep(1)
 
@@ -105,20 +56,42 @@ def execute(
 
     arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
 
+    in_bbox = (ext.XMin, ext.YMin, ext.XMax, ext.YMax)
+    in_epsg = ext.spatialReference.factoryCode
+
+    out_epsg = ui.extract_epsg_code(out_srs)
+    out_bbox = shared.reproject_bbox(in_bbox, in_epsg, out_epsg)
+
+    if out_epsg == 4326:
+        out_res *= 9.466833186042272E-06
+
+    start_date = start_date.strftime('%Y-%m-%d')
+    end_date = end_date.strftime('%Y-%m-%d')
+
+    collections = ui.convert_collections('ga_s2_ard_3', collections)
+    assets = ui.convert_assets('ga_s2_ard_3', assets)
+
+    mask_asset = ui.convert_mask_algorithm(mask_algorithm)
+    assets += [mask_asset]
+
     try:
-        # reproject stac bbox to wgs 1984, fetch all available stac items
-        stac_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, 4326)
-        stac_features = stac.fetch_all_stac_feats(collections,
-                                                  start_date,
-                                                  end_date,
-                                                  stac_bbox,
-                                                  100)
+        ds = cuber.fetch(
+            collections=collections,
+            assets=assets,
+            date=(start_date, end_date),
+            out_bbox=out_bbox,
+            out_epsg=out_epsg,
+            out_res=out_res,
+            remove_slc_off=False,  # irrelevant for s2
+            ignore_errors=True  # TODO: add to ui
+        )
+
     except Exception as e:
         arcpy.AddError('Error occurred during DEA STAC query. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    if len(stac_features) == 0:
+    if 'time' not in ds.dims or len(ds['time']) == 0:
         arcpy.AddWarning('No STAC features were found.')
         return
 
@@ -127,40 +100,16 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region PREPARING STAC FEATURES
+    # region REMOVE DUPLICATE DATES
 
-    arcpy.SetProgressor('default', 'Preparing STAC downloads...')
-
-    root_folder = os.path.dirname(out_nc)
-    tmp_folder = os.path.join(root_folder, 'tmp')
-
-    shared.drop_temp_folder(tmp_folder)
-    shared.create_temp_folder(tmp_folder)
+    arcpy.SetProgressor('default', 'Removing duplicate dates...')
 
     try:
-        out_bbox = shared.reproject_bbox(fc_bbox, fc_epsg, out_epsg)
-        stac_downloads = stac.convert_stac_feats_to_stac_downloads(stac_features,
-                                                                   assets,
-                                                                   mask_algorithm,
-                                                                   quality_flags,
-                                                                   max_out_of_bounds,
-                                                                   max_invalid_pixels,
-                                                                   out_bbox,
-                                                                   out_epsg,
-                                                                   out_res,
-                                                                   out_nodata,
-                                                                   out_dtype,
-                                                                   tmp_folder)
+        ds = cuber.drop_duped_dates(ds)
 
     except Exception as e:
-        arcpy.AddError('Error occurred during STAC download preparation. See messages.')
+        arcpy.AddError('Error occurred while removing duplicate dates. See messages.')
         arcpy.AddMessage(str(e))
-        return
-
-    stac_downloads = stac.group_stac_downloads_by_solar_day(stac_downloads)
-
-    if len(stac_downloads) == 0:
-        arcpy.AddWarning('No valid downloads were found.')
         return
 
     time.sleep(1)
@@ -170,32 +119,16 @@ def execute(
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region DOWNLOAD WCS MASK DATA
 
-    arcpy.SetProgressor('step', 'Downloading and validating mask data...', 0, len(stac_downloads), 1)
+    n_dls = len(ds['time'])
+    arcpy.SetProgressor('step', 'Downloading mask data...', 0, n_dls, 1)
 
     try:
-        i = 0
-        with ThreadPoolExecutor(max_workers=max_threads) as pool:
-            futures = []
-            for stac_download in stac_downloads:
-                task = pool.submit(cube.worker_read_mask_and_validate, stac_download)
-                futures.append(task)
-
-            for future in as_completed(futures):
-                arcpy.AddMessage(future.result())
-
-                i += 1
-                if i % 1 == 0:
-                    arcpy.SetProgressorPosition(i)
+        with ArcProgressBar():
+            ds[mask_asset].load(num_workers=max_threads)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while downloading and validating mask data. See messages.')
+        arcpy.AddError('Error occurred while downloading mask data. See messages.')
         arcpy.AddMessage(str(e))
-        return
-
-    stac_downloads = cube.remove_mask_invalid_downloads(stac_downloads)
-
-    if len(stac_downloads) == 0:
-        arcpy.AddWarning('No valid downloads were found.')
         return
 
     time.sleep(1)
@@ -205,24 +138,47 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region DOWNLOAD WCS VALID DATA
+    # region APPLY WCS MASK DATA
 
-    arcpy.SetProgressor('step', 'Downloading valid data...', 0, len(stac_downloads), 1)
+    arcpy.SetProgressor('default', 'Applying mask data...')
+
+    quality_flags = ui.convert_mask_flags(quality_flags)  # handles fmask and s2c
 
     try:
-        i = 0
-        with ThreadPoolExecutor(max_workers=max_threads) as pool:
-            futures = []
-            for download in stac_downloads:
-                task = pool.submit(cube.worker_read_bands_and_export, download)
-                futures.append(task)
+        ds = cuber.apply_mask(ds=ds,
+                              mask_asset=mask_asset,
+                              max_empty=max_empty,
+                              mask_flags=quality_flags,
+                              max_invalid=max_invalid,
+                              mask_pixels=True,  # TODO: maybe allow user to set in UI
+                              nodata=out_nodata,
+                              drop_mask_asset=remove_mask)
 
-            for future in as_completed(futures):
-                arcpy.AddMessage(future.result())
+        if mask_asset in list(ds.data_vars):
+            ds = ds.rename({mask_asset: 'mask'})  # makes life easier later
 
-                i += 1
-                if i % 1 == 0:
-                    arcpy.SetProgressorPosition(i)
+    except Exception as e:
+        arcpy.AddError('Error occurred while applying mask data. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    if 'time' not in ds.dims or len(ds['time']) == 0:
+        arcpy.AddWarning('No valid downloads were found.')
+        return
+
+    time.sleep(1)
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region DOWNLOAD WCS VALID DATA
+
+    n_dls = shared.count_xr_chunked(ds)
+    arcpy.SetProgressor('step', 'Downloading valid data...', 0, n_dls, 1)
+
+    try:
+        with ArcProgressBar():
+            ds.load(num_workers=max_threads)
 
     except Exception as e:
         arcpy.AddError('Error occurred while downloading valid data. See messages.')
@@ -236,15 +192,15 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN AND COMBINE NETCDFS
+    # region CONFORM DATATYPES
 
-    arcpy.SetProgressor('default', 'Cleaning and combining NetCDFs...')
+    arcpy.SetProgressor('default', 'Conforming data types...')
 
     try:
-        ds = cube.fix_xr_meta_and_combine(stac_downloads)
+        ds = shared.elevate_xr_dtypes(ds)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while cleaning and combining NetCDFs. See messages.')
+        arcpy.AddError('Error occurred while conforming data types. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -253,18 +209,15 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region MASK OUT INVALID NETCDF PIXELS
+    # region EXPORT NETCDF
 
-    arcpy.SetProgressor('default', 'Masking out invalid NetCDF pixels...')
+    arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
-        ds = cube.apply_xr_mask(ds,
-                                quality_flags,
-                                out_nodata,
-                                in_keep_mask)
+        ds.to_netcdf(out_nc)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while masking out invalid NetCDF pixels. See messages.')
+        arcpy.AddError('Error occurred while exporting NetCDF. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -273,32 +226,131 @@ def execute(
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region EXPORT COMBINED NETCDF
+    # region WRAP UP
 
-    arcpy.SetProgressor('default', 'Exporting combined NetCDF...')
+    arcpy.SetProgressor('default', 'Wrapping up...')
 
-    try:
-        cube.export_xr_to_nc(ds, out_nc)
-
-    except Exception as e:
-        arcpy.AddError('Error occurred while exporting combined NetCDF. See messages.')
-        arcpy.AddMessage(str(e))
-        return
+    ui.print_dates(ds)
 
     time.sleep(1)
 
     # endregion
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN UP ENVIRONMENT
+    return
 
-    arcpy.SetProgressor('default', 'Cleaning up environment...')
 
-    cube.safe_close_ncs(tmp_folder)  # TODO: surely there is better way
-    shared.drop_temp_folder(tmp_folder)
+def _make_test_params():
+    """For testing outside ArcGIS Pro only."""
 
-    time.sleep(1)
+    import arcpy
 
-    # endregion
+    p00 = arcpy.Parameter(name='in_extent',
+                          datatype='GPExtent',
+                          parameterType='Required',
+                          direction='Input')
 
-# execute(None)
+    p01 = arcpy.Parameter(name='out_nc',
+                          datatype='DEFile',
+                          parameterType='Required',
+                          direction='Output')
+
+    p02 = arcpy.Parameter(name='in_start_date',
+                          datatype='GPDate',
+                          parameterType='Required',
+                          direction='Input')
+
+    p03 = arcpy.Parameter(name='in_end_date',
+                          datatype='GPDate',
+                          parameterType='Required',
+                          direction='Input')
+
+    p04 = arcpy.Parameter(name='in_collections',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input',
+                          multiValue=True)
+    p04.filter.type = 'ValueList'
+
+    p05 = arcpy.Parameter(name='in_assets',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input',
+                          multiValue=True)
+    p05.filter.type = 'ValueList'
+
+    p06 = arcpy.Parameter(name='in_mask_algorithm',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p06.filter.type = 'ValueList'
+
+    p07 = arcpy.Parameter(name='in_quality_flags',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input',
+                          multiValue=True)
+    p07.filter.type = 'ValueList'
+
+    p08 = arcpy.Parameter(name='in_remove_mask',
+                          datatype='GPBoolean',
+                          parameterType='Required',
+                          direction='Input')
+
+    p09 = arcpy.Parameter(name='in_max_empty',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+    p09.filter.type = 'Range'
+
+    p10 = arcpy.Parameter(name='in_max_invalid',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+    p10.filter.type = 'Range'
+
+    p11 = arcpy.Parameter(name='in_nodata_value',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+
+    p12 = arcpy.Parameter(name='in_srs',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p12.filter.type = 'ValueList'
+
+    p13 = arcpy.Parameter(name='in_res',
+                          datatype='GPDouble',
+                          parameterType='Required',
+                          direction='Input')
+
+    p14 = arcpy.Parameter(name='in_max_threads',
+                          datatype='GPLong',
+                          parameterType='Optional',
+                          direction='Input')
+    p14.filter.type = 'Range'
+
+    bbox = (-1516346, -3589160, -1514698, -3586324)
+    srs = arcpy.SpatialReference(3577)
+
+    p00.value = arcpy.Extent(*bbox, spatial_reference=srs)
+    p01.value = r'C:\Users\Lewis\Desktop\arcdea\s2.nc'
+    p02.value = '2020-01-01'
+    p03.value = '2023-12-31'
+    p04.value = ['Sentinel 2A', 'Sentinel 2B']
+    p05.value = ['Blue', 'Green', 'Red', 'NIR 1']
+    p06.value = 'S2Cloudless' #'fMask'
+    p07.value = ['Valid'] #['Valid', 'Snow', 'Shadow', 'Water']
+    p08.value = True
+    p09.value = 10
+    p10.value = 5
+    p11.value = -999
+    p12.value = 'GDA94 Australia Albers (EPSG: 3577)'
+    p13.value = 10
+    p14.value = None
+
+    params = [p00, p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12, p13, p14]
+
+    return params
+
+# execute(_make_test_params())  # testing, comment out when done

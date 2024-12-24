@@ -9,7 +9,47 @@
     <NoWarn>CA1416</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Toolboxes\toolboxes\tests\**" />
+    <EmbeddedResource Remove="Toolboxes\toolboxes\tests\**" />
+    <None Remove="Toolboxes\toolboxes\tests\**" />
+    <Page Remove="Toolboxes\toolboxes\tests\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Toolboxes\arcpy\ArcDEA.py" />
+    <None Remove="Toolboxes\help\gp\ArcDEA_toolbox.xml" />
+    <None Remove="Toolboxes\help\gp\FetchLandsatBaselineData_ArcDEA.xml" />
+    <None Remove="Toolboxes\help\gp\FetchLandsatGeomedData_ArcDEA.xml" />
+    <None Remove="Toolboxes\help\gp\FetchSentinel2BaselineData_ArcDEA.xml" />
+    <None Remove="Toolboxes\help\gp\toolboxes\ArcDEA.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.CalculateIndices.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.ConvertNetCDFToCloudRaster.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.ConvertNetCDFToRasters.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.FetchLandsatBaselineData.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.FetchLandsatGeomedData.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.FetchSentinel2BaselineData.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.GroupData.pyt.xml" />
     <None Remove="Toolboxes\toolboxes\ArcDEA.pyt" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.RemoveOutliers.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.ResampleData.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\ArcDEA.Testing.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\cuber\converters\_xr_to_raster.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\converters\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\core\_core.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\core\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\indices\_indices.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\indices\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_append_xr_attrs.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_count_xr_chunked.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_elevate_xr_dtypes.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_elevate_xr_nodata.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_extract_band_info.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_extract_rast_info.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_extract_xr_info.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_reproject_bbox.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_set_xr_nodata_to_nan.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\__init__.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
@@ -29,6 +69,15 @@
     <None Remove="Toolboxes\toolboxes\scripts\stac.py" />
     <None Remove="Toolboxes\toolboxes\scripts\web.py" />
     <None Remove="Toolboxes\toolboxes\scripts\web2.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_convert_assets.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_convert_collections.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_convert_file_extensions.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_convert_mask_algorithm.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_convert_mask_flags.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_extract_epsg_code.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_extract_xr_collection.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_print_dates.py" />
+    <None Remove="Toolboxes\toolboxes\ui\__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Config.daml" />
@@ -36,7 +85,41 @@
     <Content Include="Images\AddInDesktop32.png" />
     <Content Include="DarkImages\AddInDesktop16.png" />
     <Content Include="DarkImages\AddInDesktop32.png" />
+    <Content Include="Toolboxes\arcpy\ArcDEA.py" />
+    <Content Include="Toolboxes\help\gp\ArcDEA_toolbox.xml" />
+    <Content Include="Toolboxes\help\gp\FetchLandsatBaselineData_ArcDEA.xml" />
+    <Content Include="Toolboxes\help\gp\FetchLandsatGeomedData_ArcDEA.xml" />
+    <Content Include="Toolboxes\help\gp\FetchSentinel2BaselineData_ArcDEA.xml" />
+    <Content Include="Toolboxes\help\gp\toolboxes\ArcDEA.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.CalculateIndices.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.ConvertNetCDFToCloudRaster.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.ConvertNetCDFToRasters.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.FetchLandsatBaselineData.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.FetchLandsatGeomedData.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.FetchSentinel2BaselineData.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.GroupData.pyt.xml" />
     <Content Include="Toolboxes\toolboxes\ArcDEA.pyt" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.RemoveOutliers.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.ResampleData.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\ArcDEA.Testing.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\cuber\converters\_xr_to_raster.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\converters\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\core\_core.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\core\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\indices\_indices.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\indices\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_append_xr_attrs.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_count_xr_chunked.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_elevate_xr_dtypes.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_elevate_xr_nodata.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_extract_band_info.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_extract_rast_info.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_extract_xr_info.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_reproject_bbox.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_set_xr_nodata_to_nan.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\__init__.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
@@ -55,6 +138,15 @@
     <Content Include="Toolboxes\toolboxes\scripts\stac.py" />
     <Content Include="Toolboxes\toolboxes\scripts\web.py" />
     <Content Include="Toolboxes\toolboxes\scripts\web2.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_convert_assets.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_convert_collections.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_convert_file_extensions.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_convert_mask_algorithm.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_convert_mask_flags.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_extract_epsg_code.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_extract_xr_collection.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_print_dates.py" />
+    <Content Include="Toolboxes\toolboxes\ui\__init__.py" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="ArcGIS.Desktop.Framework">
@@ -127,9 +219,6 @@
       <CopyLocal>False</CopyLocal>
       <Private>False</Private>
     </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Toolboxes\toolboxes\tests\" />
   </ItemGroup>
   <Import Project="C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets" Condition="Exists('C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets') AND !Exists('Esri.ArcGISPro.Extensions.targets')" />
 </Project>

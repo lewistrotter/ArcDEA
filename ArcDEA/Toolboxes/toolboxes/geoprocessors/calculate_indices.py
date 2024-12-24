@@ -1,32 +1,27 @@
-def execute(
-        parameters
-):
+
+def execute(parameters):
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
 
     import time
     import xarray as xr
     import arcpy
+    import ui
 
-    from scripts import cube
-    from scripts import indices
+    from cuber import shared
+    from cuber import indices
+    from dask.callbacks import Callback
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region EXTRACT PARAMETERS
 
-    # uncomment these when not testing
     in_nc = parameters[0].valueAsText
     out_nc = parameters[1].valueAsText
-    in_type = parameters[2].valueAsText
-    in_index = parameters[3].valueAsText
-
-    # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
-    # out_nc = r'C:\Users\Lewis\Desktop\arcdea\ls_ndvi.nc'
-    # in_type = 'Vegetation'
-    # in_index = 'NDVI: (Normalised Difference Vegetation Index)'
+    # index_type = parameters[2].valueAsText  # used only on ui
+    index_name = parameters[3].valueAsText
 
     # endregion
 
@@ -37,14 +32,18 @@ def execute(
 
     arcpy.env.overwriteOutput = True
 
+    class ArcProgressBar(Callback):
+        def _posttask(self, key, result, dsk, state, worker_id):
+            arcpy.SetProgressorPosition()
+
     time.sleep(1)
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region LOAD AND CHECK NETCDF
+    # region READ NETCDF
 
-    arcpy.SetProgressor('default', 'Reading and checking NetCDF data...')
+    arcpy.SetProgressor('default', 'Reading NetCDF data...')
 
     try:
         ds = xr.open_dataset(in_nc,
@@ -56,8 +55,8 @@ def execute(
         arcpy.AddMessage(str(e))
         return
 
-    if cube.check_xr_is_valid(ds) is False:
-        arcpy.AddError('Input NetCDF is not a valid ArcDEA NetCDF.')
+    if 'time' not in ds or 'x' not in ds or 'y' not in ds:
+        arcpy.AddError('Input NetCDF missing time, x and/or y dimensions.')
         return
 
     time.sleep(1)
@@ -69,34 +68,41 @@ def execute(
 
     arcpy.SetProgressor('default', 'Preparing NetCDF data...')
 
-    ds_attrs = ds.attrs
-    ds_band_attrs = ds[list(ds)[0]].attrs
-    ds_spatial_ref_attrs = ds['spatial_ref'].attrs
+    ds = ds.drop_vars('mask', errors='ignore')  # no longer want mask
 
-    collection = ds.attrs.get('collection')
-    if collection not in ['ls', 's2']:
-        arcpy.AddError('NetCDF is not from Landsat or Sentinel-2 satellites.')
+    try:
+        # set all nodata to nan (also sets to float32)
+        ds = shared.set_xr_nodata_to_nan(ds)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred when preparing NetCDF. Check messages.')
+        arcpy.AddMessage(str(e))
         return
-
-    nodata = ds.attrs.get('nodata')
-    ds = ds.where(ds != nodata).astype('float32')  # set nodata to nan, ensure float32
-
-    raw_bands = list(ds)  # store names for easy drop later on
 
     time.sleep(1)
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CALCULATE INDEX
+    # region COMPUTE INDEX
 
-    arcpy.SetProgressor('default', 'Calculating index...')
+    n_dls = len(ds['time'])  # only computing once per date
+    arcpy.SetProgressor('step', 'Computing index...', 0, n_dls, 1)
+
+    index_name = index_name.split(':')[0].lower()  # remove ui label
 
     try:
-        indices.calc_index(ds,
-                           in_type,
-                           in_index,
-                           collection)
+        collection = ui.extract_xr_collection(ds)  # will error if nothing
+
+        # TODO: maybe indices.calculate() ?
+        ds = indices.calc_indices(ds=ds,
+                                  index=index_name,
+                                  collection=collection,
+                                  rescale=True,
+                                  drop_bands=True)
+
+        with ArcProgressBar():
+            ds.load()
 
     except Exception as e:
         arcpy.AddError('Error occurred when calculating index. Check messages.')
@@ -105,38 +111,22 @@ def execute(
 
     time.sleep(1)
 
+    arcpy.ResetProgressor()
+
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region DROP RAW NETCDF BANDS
+    # region CONFORM DATA TYPES
 
-    arcpy.SetProgressor('default', 'Dropping raw NetCDF bands...')
+    arcpy.SetProgressor('default', 'Conforming data types...')
 
     try:
-        ds = ds.drop_vars(raw_bands)
+        ds = shared.elevate_xr_dtypes(ds)
 
     except Exception as e:
-        arcpy.AddError('Error occurred when dropping raw bands. Check messages.')
+        arcpy.AddError('Error occurred while conforming data types. See messages.')
         arcpy.AddMessage(str(e))
         return
-
-    time.sleep(1)
-
-    # endregion
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region FINALISE NETCDF
-
-    arcpy.SetProgressor('default', 'Finalising NetCDF...')
-
-    # TODO: set nodata back to original value?
-
-    ds.attrs = ds_attrs
-    ds['spatial_ref'].attrs = ds_spatial_ref_attrs
-    for var in ds:
-        ds[var].attrs = ds_band_attrs
-
-    ds.attrs['processing'] += ';' + 'index'
 
     time.sleep(1)
 
@@ -148,10 +138,10 @@ def execute(
     arcpy.SetProgressor('default', 'Exporting NetCDF...')
 
     try:
-        cube.export_xr_to_nc(ds, out_nc)
+        ds.to_netcdf(out_nc)
 
     except Exception as e:
-        arcpy.AddError('Error occurred while exporting combined NetCDF. See messages.')
+        arcpy.AddError('Error occurred while exporting NetCDF. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -159,4 +149,42 @@ def execute(
 
     # endregion
 
-# execute(None)
+def _make_test_params():
+    """For testing outside ArcGIS Pro only."""
+
+    import arcpy
+
+    p00 = arcpy.Parameter(name='in_nc',
+                          datatype='DEFile',
+                          parameterType='Required',
+                          direction='Input')
+    p00.filter.list = ['nc']
+
+    p01 = arcpy.Parameter(name='out_nc',
+                          datatype='DEFile',
+                          parameterType='Required',
+                          direction='Output')
+    p01.filter.list = ['nc']
+
+    p02 = arcpy.Parameter(name='in_index_type',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p02.filter.type = 'ValueList'
+
+    p03 = arcpy.Parameter(name='in_index_name',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p03.filter.type = 'ValueList'
+
+    p00.value = r'C:\Users\Lewis\Documents\ArcGIS\Projects\ArcDEA\ds.nc'
+    p01.value = r'C:\Users\Lewis\Documents\ArcGIS\Projects\ArcDEA\ndvi.nc'
+    p02.value = 'Vegetation'
+    p03.value = 'NDVI: Normalised Difference Vegetation Index'
+
+    params = [p00, p01, p02, p03]
+
+    return params
+
+# execute(_make_test_params())  # testing, comment out when done

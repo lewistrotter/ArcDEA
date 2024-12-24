@@ -1,36 +1,26 @@
 
 
-def execute(
-        parameters
-        # messages  # TODO: use messages input?
-):
+def execute(parameters):
+
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region IMPORTS
 
-    import os
-    import shutil
-    import datetime
+    import time
     import xarray as xr
     import arcpy
+    import ui
 
-    from osgeo import gdal
-
-    from scripts import shared
-    #from scripts import conversions
-    #from scripts import web
+    from cuber import converters
+    from cuber import shared
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region EXTRACT PARAMETERS
 
-    # uncomment these when not testing
     in_nc = parameters[0].valueAsText
     out_folder = parameters[1].valueAsText
-
-    # uncomment these when testing
-    # in_nc = r'C:\Users\Lewis\Desktop\arcdea\data\gmed.nc'
-    # out_folder = r'C:\Users\Lewis\Desktop\arcdea\data'
+    out_extension = parameters[2].valueAsText
 
     # endregion
 
@@ -40,102 +30,114 @@ def execute(
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-    # num_cpu = shared.detect_num_cores(modify_percent=0.95)  # TODO: set this via ui
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region LOAD AND CHECK NETCDF
+    # region READ NETCDF
 
-    arcpy.SetProgressor('default', 'Reading and checking NetCDF data...')
+    arcpy.SetProgressor('default', 'Reading NetCDF data...')
 
     try:
-        ds = xr.open_dataset(in_nc)
+        ds = xr.open_dataset(in_nc,
+                             chunks={'time': 1},    # chunk to prevent memory
+                             mask_and_scale=False)  # ensure dtype maintained
 
     except Exception as e:
         arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
         arcpy.AddMessage(str(e))
         return
 
-    if 'time' not in ds:
-        arcpy.AddError('No time dimension detected in NetCDF.')
+    if 'time' not in ds or 'x' not in ds or 'y' not in ds:
+        arcpy.AddError('Input NetCDF missing time, x and/or y dimensions.')
         return
 
-    # TODO: check if nodata value exists
-
-    # TODO: check if has correct attrs
-
-    # TODO: other checks
+    time.sleep(1)
 
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region working
+    # region CONFORM DATA TYPES AND NODATA VALUES
 
-    arcpy.SetProgressor('default', 'Converting NetCDF to rasters...')
-
-    tmp_folder = os.path.join(out_folder, 'tmp')
-
-    shared.drop_temp_folder(tmp_folder)
-    if not os.path.exists(tmp_folder):
-        os.mkdir(tmp_folder)
-
-    # set up step-wise progressor
-    arcpy.SetProgressor('step', None, 0, len(ds['time']))
-
-    # TODO: threading?
+    arcpy.SetProgressor('default', 'Conforming data types and nodata values...')
 
     try:
-        for i in range(len(ds['time'])):
-            da = ds.isel(time=i)
+        # converter will do this again, but for clarity...
+        ds = shared.elevate_xr_dtypes(ds)
+        ds = shared.elevate_xr_nodata(ds)
 
-            dt = da['time'].dt.strftime('%Y-%m-%d')
-            dt = str(dt.values)
+    except Exception as e:
+        arcpy.AddError('Error occurred while conforming data. See messages.')
+        arcpy.AddMessage(str(e))
+        return
 
-            arcpy.AddMessage(f'Converting date: {dt}')
+    time.sleep(1)
 
-            tmp_bands = []
-            for var in list(da.data_vars):
-                tmp_nc = os.path.join(tmp_folder, f'{var}.nc')
-                da[var].to_netcdf(tmp_nc)
+    # endregion
 
-                dataset = gdal.Open(tmp_nc, gdal.GA_ReadOnly)
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region EXPORT RASTERS
 
-                tmp_ras = os.path.join(tmp_folder, f'{var}.tif')
-                dataset = gdal.Translate(tmp_ras, dataset)
-                dataset = None
+    n_dls = len(ds['time'])  # only computing once per date
+    arcpy.SetProgressor('step', 'Exporting rasters...', 0, n_dls, 1)
 
-                tmp_bands.append(tmp_ras)
+    out_extension = ui.convert_file_extensions(out_extension)
 
-            if 'platform' in list(da.coords):
-                code = str(da['platform'].values)
-                fn = f'R{dt}-{code}.tif'
-            else:
-                fn = f'R{dt}.tif'
+    try:
+        dts = ds['time'].to_numpy()
+        for dt in dts:
+            ds_sel = ds.sel(time=dt)
 
-            out_ras = os.path.join(out_folder, fn)
-            arcpy.management.CompositeBands(in_rasters=tmp_bands,
-                                            out_raster=out_ras)
+            converters.xr_to_raster(ds=ds_sel,
+                                    out_folder=out_folder,
+                                    out_extension=out_extension)
 
             arcpy.SetProgressorPosition()
 
     except Exception as e:
-        arcpy.AddError('Error occurred when reading NetCDF. Check messages.')
+        arcpy.AddError('Error occurred while exporting rasters. See messages.')
         arcpy.AddMessage(str(e))
         return
 
-    # reset progressor
+    time.sleep(1)
+
     arcpy.ResetProgressor()
 
     # endregion
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CLEAN UP ENVIRONMENT
+    return
 
-    arcpy.SetProgressor('default', 'Cleaning up environment...')
 
-    shared.drop_temp_folder(tmp_folder)
+def _make_test_params():
+    """For testing outside ArcGIS Pro only."""
 
-    # endregion
+    import arcpy
 
-# execute(None)
+    p00 = arcpy.Parameter(name='in_nc',
+                          datatype='DEFile',
+                          parameterType='Required',
+                          direction='Input')
+    p00.filter.list = ['nc']
+
+    p01 = arcpy.Parameter(name='out_folder',
+                          datatype='DEFolder',
+                          parameterType='Required',
+                          direction='Input')
+
+    p02 = arcpy.Parameter(displayName='Output Format',
+                          name='in_extension',
+                          datatype='GPString',
+                          parameterType='Required',
+                          direction='Input')
+    p02.filter.type = 'ValueList'
+
+
+    p00.value = r'C:\Users\Lewis\Documents\ArcGIS\Projects\ArcDEA\ds.nc'
+    p01.value = r'C:\Users\Lewis\Desktop\tmp'
+    p02.value = 'TIFF'
+
+    params = [p00, p01, p02]
+
+    return params
+
+# execute(_make_test_params())  # testing, comment out when done
