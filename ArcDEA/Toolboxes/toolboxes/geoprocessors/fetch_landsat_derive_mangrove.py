@@ -20,9 +20,10 @@ def execute(parameters):
     out_nc = parameters[1].valueAsText
     start_year = parameters[2].valueAsText
     end_year = parameters[3].valueAsText
-    out_srs = parameters[4].value
-    out_res = parameters[5].value
-    max_threads = parameters[6].value
+    remove_slc_off = parameters[4].value
+    out_srs = parameters[5].value
+    out_res = parameters[6].value
+    max_threads = parameters[7].value
 
     # endregion
 
@@ -67,8 +68,9 @@ def execute(parameters):
             out_bbox=out_bbox,
             out_epsg=out_epsg,
             out_res=out_res,
-            remove_slc_off=False,
-            ignore_errors=True  # TODO: add to ui
+            remove_slc_off=remove_slc_off,
+            ignore_errors=True,  # TODO: add to ui
+            full_query=True  # slc-7 off requires full metadata
         )
 
     except Exception as e:
@@ -104,22 +106,7 @@ def execute(parameters):
 
     # endregion
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region CONFORM DATA TYPES
-
-    # arcpy.SetProgressor('default', 'Conforming data types...')
-    #
-    # try:
-    #     ds = shared.elevate_xr_dtypes(ds)
-    #
-    # except Exception as e:
-    #     arcpy.AddError('Error occurred while conforming data types. See messages.')
-    #     arcpy.AddMessage(str(e))
-    #     return
-    #
-    # time.sleep(1)
-
-    # endregion
+    # note: no need to conform dtypes, only one band available
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region EXPORT NETCDF
@@ -177,22 +164,28 @@ def _make_test_params():
                           parameterType='Required',
                           direction='Input')
 
-    p04 = arcpy.Parameter(name='in_srs',
+    p04 = arcpy.Parameter(name='in_remove_slc_off',
+                          datatype='GPBoolean',
+                          parameterType='Required',
+                          direction='Input',
+                          category='Quality')
+
+    p05 = arcpy.Parameter(name='in_srs',
                           datatype='GPString',
                           parameterType='Required',
                           direction='Input')
-    p04.filter.type = 'ValueList'
+    p05.filter.type = 'ValueList'
 
-    p05 = arcpy.Parameter(name='in_res',
+    p06 = arcpy.Parameter(name='in_res',
                           datatype='GPDouble',
                           parameterType='Required',
                           direction='Input')
 
-    p06 = arcpy.Parameter(name='in_max_threads',
+    p07 = arcpy.Parameter(name='in_max_threads',
                           datatype='GPLong',
                           parameterType='Optional',
                           direction='Input')
-    p06.filter.type = 'Range'
+    p07.filter.type = 'Range'
 
     bbox = (-1675237, -3234559, -1666622, -3244647)
     srs = arcpy.SpatialReference(3577)
@@ -201,13 +194,14 @@ def _make_test_params():
     p01.value = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
     p02.value = 2008
     p03.value = 2024
-    p04.value = 'GDA94 Australia Albers (EPSG: 3577)'
-    p05.value = 30
-    p06.value = None
+    p04.value = True
+    p05.value = 'GDA94 Australia Albers (EPSG: 3577)'
+    p06.value = 30
+    p07.value = None
 
 
-    params = [p00, p01, p02, p03, p04, p05, p06]
+    params = [p00, p01, p02, p03, p04, p05, p06, p07]
 
     return params
 
-execute(_make_test_params())  # testing, comment out when done
+# execute(_make_test_params())  # testing, comment out when done

@@ -6,6 +6,7 @@ def execute(parameters):
 
     import os
     import time
+    import numpy as np
     import xarray as xr
     import arcpy
     import ui
@@ -39,8 +40,6 @@ def execute(parameters):
     if not max_threads:
         max_threads = max(os.cpu_count() // 2, 1)  # keeps ui responsive
 
-    arcpy.AddMessage(f'Computing with number of threads: {max_threads}.')
-
     time.sleep(1)
 
     # endregion
@@ -50,7 +49,7 @@ def execute(parameters):
 
     arcpy.SetProgressor('default', 'Reading NetCDF data...')
 
-    chunks = {'time': -1, 'x': 50, 'y': 50}  # small x, y chunks for low memory
+    chunks = {'time': -1, 'x': 128, 'y': 128}  # small x, y chunks for low memory
 
     try:
         ds = xr.open_dataset(in_nc,
@@ -79,7 +78,7 @@ def execute(parameters):
 
     ds = ds.drop_vars('mask', errors='ignore')  # no longer want mask
 
-    # note: hampel func handles nodata to nan and float32 cast
+    # note: zscore func handles nodata to nan and float32 cast
 
     time.sleep(1)
 
@@ -88,11 +87,14 @@ def execute(parameters):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region DETECT AND REMOVE OUTLIERS
 
-    arcpy.SetProgressor('step', 'Detecting and removing outliers...', 0, 100, 1)
+    n_dls = len(list(ds.data_vars))
+    arcpy.SetProgressor('step', 'Detecting and removing outliers...', 0, n_dls, 1)
 
     # prepare window size
     if win_size is None:
-        win_size = len(ds['time']) // 10
+        n_dts = ds['time'].size
+        n_yrs = len(np.unique(ds['time.year']))
+        win_size = int(2 * ((n_dts / n_yrs) // 7) + 1)
 
     if win_size % 2 == 0:
         win_size += 1  # win must be odd number
@@ -104,10 +106,13 @@ def execute(parameters):
     try:
         for var in ds.data_vars:
             da = ds[var]
-            ds[var] = outliers.hampel_filter(da=da,
-                                             win_size=win_size,
-                                             n_sigma=num_stdvs,
-                                             fill_outliers=fill_outliers)
+
+            da = outliers.zscore_filter(da=da,
+                                        win_size=win_size,
+                                        n_sigma=num_stdvs,
+                                        fill_outliers=fill_outliers)
+
+            ds[var] = da
 
         with arc_progress_bar:
             ds.load(num_workers=max_threads)
@@ -187,7 +192,6 @@ def _make_test_params():
                           parameterType='Optional',
                           direction='Input')
 
-
     p03 = arcpy.Parameter(displayName='Number of Standard Deviations',
                           name='in_num_stdvs',
                           datatype='GPDouble',
@@ -210,9 +214,9 @@ def _make_test_params():
                           direction='Input')
 
     p00.value = r"C:\Users\Lewis\PycharmProjects\cuber\data\ds_small.nc"
-    p01.value = r'C:\Users\Lewis\Desktop\tmp'
+    p01.value = r'C:\Users\Lewis\Desktop\tmp\out.nc'
     p02.value = None
-    p03.value = 3.5
+    p03.value = 2.0
     p04.value = False
     p05.value = True
     p06.value = None

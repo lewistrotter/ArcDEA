@@ -7,6 +7,7 @@ __all__ = [
     'convert_mask_flags',
     'extract_epsg_code',
     'extract_xr_collection',
+    'make_progress_bar',
     'print_dates'
 ]
 
@@ -17,4 +18,5 @@ from ._convert_mask_algorithm import convert_mask_algorithm
 from ._convert_mask_flags import convert_mask_flags
 from ._extract_epsg_code import extract_epsg_code
 from ._extract_xr_collection import extract_xr_collection
+from ._make_progress_bar import make_progress_bar
 from ._print_dates import print_dates

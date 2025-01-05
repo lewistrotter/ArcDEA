@@ -1,23 +1,6 @@
-﻿using ArcGIS.Core.CIM;
-using ArcGIS.Core.Data;
-using ArcGIS.Core.Geometry;
-using ArcGIS.Desktop.Catalog;
-using ArcGIS.Desktop.Core;
-using ArcGIS.Desktop.Core.Geoprocessing;
-using ArcGIS.Desktop.Editing;
-using ArcGIS.Desktop.Extensions;
-using ArcGIS.Desktop.Framework;
+﻿using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Framework.Contracts;
-using ArcGIS.Desktop.Framework.Dialogs;
-using ArcGIS.Desktop.Framework.Threading.Tasks;
-using ArcGIS.Desktop.Layouts;
-using ArcGIS.Desktop.Mapping;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Media;
 
 namespace ArcDEA
@@ -43,9 +26,9 @@ namespace ArcDEA
                                 tooltip: "Convert a NetCDF to a folder of rasters."));
 
             // Create Convert NetCDF to Cloud Raster gallery item
-            Add(new GalleryItem(text: "Cube to Cloud Raster Format",
-                                icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
-                                tooltip: "Convert a NetCDF to the ESRI Cloud Raster Format."));
+            //Add(new GalleryItem(text: "Cube to Cloud Raster Format",
+                                //icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
+                                //tooltip: "Convert a NetCDF to the ESRI Cloud Raster Format."));
 
             //// Create Convert NetCDF to Geodatabase gallery item
             //Add(new GalleryItem(text: "NetCDF to Geodatabase",
@@ -64,10 +47,10 @@ namespace ArcDEA
             {
                 toolname = "ArcDEA.ConvertNetCDFToRasters";
             }
-            else if (item.Text == "Cube to Cloud Raster Format")
-            {
-                toolname = "ArcDEA.ConvertNetCDFToCloudRaster";
-            }
+            //else if (item.Text == "Cube to Cloud Raster Format")
+            //{
+                //toolname = "ArcDEA.ConvertNetCDFToCloudRaster";
+            //}
             // else if (item.Text == "NetCDF to Geodatabase") {}
 
             try

@@ -1,8 +1,6 @@
 ﻿using ArcGIS.Desktop.Core.Geoprocessing;
 using ArcGIS.Desktop.Framework.Contracts;
-using ArcGIS.Desktop.Framework.Dialogs;
 using System;
-using System.Windows;
 using System.Windows.Media;
 
 namespace ArcDEA
@@ -23,17 +21,17 @@ namespace ArcDEA
                 return;
 
             // Create Landsat Collection 3 (baseline) gallery item
-            Add(new GalleryItem(text: "Landsat Collection 3 (Baseline)", 
+            Add(new GalleryItem(text: "DEA Landsat Surface Reflectance", 
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null, 
                                 tooltip: "Landsat 5, 7, 8 and 9 NBART Collection 3."));
 
             // Create Landsat Collection 3 (GeoMAD) gallery item
-            Add(new GalleryItem(text: "Landsat Collection 3 (GeoMAD)",
+            Add(new GalleryItem(text: "DEA Landsat Surface Reflectance (GeoMAD)",
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
                                 tooltip: "Landsat 5, 7, 8 and 9 NBART Collection 3 GeoMAD."));
 
             // Create Sentinel 2A, 2B Collection 3 gallery item
-            Add(new GalleryItem(text: "Sentinel 2 Collection 3 (Baseline)", 
+            Add(new GalleryItem(text: "DEA Sentinel 2 Surface Reflectance", 
                                 icon: this.LargeImage != null ? ((ImageSource)this.LargeImage).Clone() : null,
                                 tooltip: "Sentinel 2A and 2B NBART Collection 3."));
 
@@ -44,17 +42,17 @@ namespace ArcDEA
         {
             string toolname = null;
 
-            if (item.Text == "Landsat Collection 3 (Baseline)")
+            if (item.Text == "DEA Landsat Surface Reflectance")
             {
                 toolname = "ArcDEA.FetchLandsatBaselineData";
             }
 
-            else if (item.Text == "Landsat Collection 3 (GeoMAD)")
+            else if (item.Text == "DEA Landsat Surface Reflectance (GeoMAD)")
             {
                 toolname = "ArcDEA.FetchLandsatGeomedData";
             }
 
-            else if (item.Text == "Sentinel 2 Collection 3 (Baseline)")
+            else if (item.Text == "DEA Sentinel 2 Surface Reflectance")
             {
                 toolname = "ArcDEA.FetchSentinel2BaselineData";
             }

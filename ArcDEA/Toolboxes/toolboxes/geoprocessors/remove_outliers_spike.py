@@ -108,10 +108,10 @@ def execute(parameters):
         for var in ds.data_vars:
             da = ds[var]
 
-            da = outliers.hampel_filter(da=da,
-                                        win_size=win_size,
-                                        n_sigma=num_stdvs,
-                                        fill_outliers=fill_outliers)
+            da = outliers.spike_filter(da=da,
+                                       win_size=win_size,
+                                       n_sigma=num_stdvs,
+                                       fill_outliers=fill_outliers)
 
             ds[var] = da
 
@@ -217,7 +217,7 @@ def _make_test_params():
     p00.value = r"C:\Users\Lewis\PycharmProjects\cuber\data\ds_small.nc"
     p01.value = r'C:\Users\Lewis\Desktop\tmp'
     p02.value = 9
-    p03.value = 3.5
+    p03.value = 2.0
     p04.value = False
     p05.value = True
     p06.value = None

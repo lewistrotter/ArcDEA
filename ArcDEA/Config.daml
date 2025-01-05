@@ -1,15 +1,16 @@
 ﻿<ArcGIS defaultAssembly="ArcDEA.dll" defaultNamespace="ArcDEA" xmlns="http://schemas.esri.com/DADF/Registry" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.esri.com/DADF/Registry file:///C:/Program%20Files/ArcGIS/Pro/bin/ArcGIS.Desktop.Framework.xsd">
-  <AddInInfo id="{ee5428c7-5f18-46b0-a69b-e3ffcf872829}" version="0.1" desktopVersion="3.3.0">
+  <AddInInfo id="{ee5428c7-5f18-46b0-a69b-e3ffcf872829}" version="0.5" desktopVersion="3.3.0">
     <Name>ArcDEA</Name>
     <Description>ArcDEA description</Description>
     <Image>Images\AddinDesktop32.png</Image>
     <Author>Lewis Trotter</Author>
     <Company>Curtin University</Company>
-    <Date>18/12/2024 09:08:43 PM</Date>
+    <Date>10/01/2025 09:00:00 PM</Date>
     <Subject>Framework</Subject>
   </AddInInfo>
   <modules>
-    <insertModule id="ArcDEA_Module" className="Module1" autoLoad="false" caption="ArcDEA">
+    <insertModule id="ArcDEA_Module" className="Module1" autoLoad="true" caption="ArcDEA">
+		
       <tabs>
         <tab id="ArcDEA_Tab1" caption="ArcDEA">
           <group refID="ArcDEA_Group1" />
@@ -17,58 +18,58 @@
           <group refID="ArcDEA_Group3" />
           <group refID="ArcDEA_Group4" />
           <group refID="ArcDEA_Group5" />
-          <group refID="ArcDEA_Group6" />
         </tab>
       </tabs>
+		
       <groups>
         <group id="ArcDEA_Group1" caption="Fetch" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_FetchBaselineGallery" inline="false" size="large" />
+          <gallery refID="ArcDEA_FetchDerivativeGallery" inline="false" size="large" />
         </group>
         <group id="ArcDEA_Group2" caption="Processing" appearsOnAddInTab="false">
           <button refID="ArcDEA_CalculateIndices" size="large" />
+          <gallery refID="ArcDEA_RemoveOutliersGallery" inline="false" size="large" />
+		  <gallery refID="ArcDEA_AggregateGallery" inline="false" size="large" />
         </group>
-        <group id="ArcDEA_Group3" caption="Cleaning" appearsOnAddInTab="false">
-          <button refID="ArcDEA_RemoveOutliers" size="large" />
-          <button refID="ArcDEA_ResampleData" size="large" />
-          <button refID="ArcDEA_GroupData" size="large" />
-        </group>
-        <group id="ArcDEA_Group4" caption="Conversion" appearsOnAddInTab="false">
+        <group id="ArcDEA_Group3" caption="Conversion" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_ConvertersGallery" inline="false" size="large" />
         </group>
-        <group id="ArcDEA_Group5" caption="Settings" appearsOnAddInTab="false">
+        <group id="ArcDEA_Group4" caption="Settings" appearsOnAddInTab="false">
           <gallery refID="ArcDEA_SettingsGallery" inline="false" size="large" />
         </group>
-        <group id="ArcDEA_Group6" caption="Testing" appearsOnAddInTab="false">
+        <!--<group id="ArcDEA_Group6" caption="Testing" appearsOnAddInTab="false">
           <button refID="ArcDEA_Testing" size="large" />
-        </group>
+        </group>-->
       </groups>
+		
       <galleries>
-        <gallery id="ArcDEA_FetchBaselineGallery" caption="Baseline" className="FetchBaselineGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchBaselineGalleryTemplate.xaml" templateID="FetchBaselineGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+        <gallery id="ArcDEA_FetchBaselineGallery" caption="Baseline" className="FetchBaselineGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchBaselineGalleryTemplate.xaml" templateID="FetchBaselineGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcDEA;component/Images/ls_base_icon_32.png">
           <tooltip heading="Fetch baseline satellite data">Query and download baseline Landsat and Sentinel-2 data from DEA services.<disabledText /></tooltip>
         </gallery>
-        <gallery id="ArcDEA_ConvertersGallery" caption="Convert Cube" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Convert cubes to other formats">Convert NetCDFs to rasters or the cloud raster format.<disabledText /></tooltip>
+        <gallery id="ArcDEA_FetchDerivativeGallery" caption="Derivative" className="FetchDerivativeGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//FetchDerivativeGalleryTemplate.xaml" templateID="FetchDerivativeGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcDEA;component/Images/ls_derive_icon_32.png">
+          <tooltip heading="Fetch derivative satellite data">Query and download Landsat and Sentinel-2 data derivatives from DEA services.<disabledText /></tooltip>
         </gallery>
-        <gallery id="ArcDEA_SettingsGallery" caption="Settings" className="SettingsGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//SettingsGalleryTemplate.xaml" templateID="SettingsGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Settings">View settings and information about the ArcDEA add-in.<disabledText /></tooltip>
+        <gallery id="ArcDEA_RemoveOutliersGallery" caption="Outliers" className="RemoveOutliersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//RemoveOutliersGalleryTemplate.xaml" templateID="RemoveOutliersGalleryItemTemplate" resizable="false" largeImage="GenericButtonBlue32">
+          <tooltip heading="Remove Temporal Outliers">Remove temporal outliers from downloaded data.<disabledText /></tooltip>
         </gallery>
-      </galleries>
+		<gallery id="ArcDEA_AggregateGallery" caption="Aggregation" className="AggregateGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//AggregateGalleryTemplate.xaml" templateID="AggregateGalleryItemTemplate" resizable="false" largeImage="GenericButtonBlue32">
+			<tooltip heading="Aggregate satellite data">Aggregate data over space and time.<disabledText /></tooltip>
+		</gallery>
+		<gallery id="ArcDEA_ConvertersGallery" caption="Convert" className="ConvertersGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//ConvertersGalleryTemplate.xaml" templateID="ConvertersGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcDEA;component/Images/convert_icon_32.png">
+			<tooltip heading="Convert data into other types">Convert NetCDFs to rasters or the cloud raster format.<disabledText /></tooltip>
+		</gallery>
+		<gallery id="ArcDEA_SettingsGallery" caption="Settings" className="SettingsGallery" itemsInRow="1" itemWidth="300" dataTemplateFile="pack://application:,,,/ArcDEA;component//SettingsGalleryTemplate.xaml" templateID="SettingsGalleryItemTemplate" resizable="false" largeImage="pack://application:,,,/ArcDEA;component/Images/settings_icon_32.png">
+			<tooltip heading="Settings">View information about the ArcDEA add-in.<disabledText /></tooltip>
+		</gallery>
+
+	  </galleries>
       <controls>
         <button id="ArcDEA_CalculateIndices" caption="Indices" className="CalculateIndices" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Indices">Generate spectral indices from downloaded data.<disabledText /></tooltip>
         </button>
-        <button id="ArcDEA_RemoveOutliers" caption="Remove Outliers" className="RemoveOutliers" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Remove outliers">Remove outliers from previously fetched data.<disabledText /></tooltip>
-        </button>
-        <button id="ArcDEA_ResampleData" caption="Resample" className="ResampleData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Resample data">Resample previously fetched data to higher or lower temporal dimension.<disabledText /></tooltip>
-        </button>
-        <button id="ArcDEA_GroupData" caption="Group" className="GroupData" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
-          <tooltip heading="Group data">Group previously fetched data based on temporal dimension.<disabledText /></tooltip>
-        </button>
-        <button id="ArcDEA_Testing" caption="Testing" className="Testing" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
+        <!--<button id="ArcDEA_Testing" caption="Testing" className="Testing" loadOnClick="true" smallImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue16.png" largeImage="pack://application:,,,/ArcGIS.Desktop.Resources;component/Images/GenericButtonBlue32.png">
           <tooltip heading="Testing">Just for testing.<disabledText /></tooltip>
-        </button>
+        </button>-->
       </controls>
     </insertModule>
   </modules>

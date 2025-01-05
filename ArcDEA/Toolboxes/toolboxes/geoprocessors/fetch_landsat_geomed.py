@@ -10,7 +10,6 @@ def execute(parameters):
     import ui
 
     from cuber import shared
-    from dask.callbacks import Callback
 
     # endregion
 
@@ -37,11 +36,7 @@ def execute(parameters):
 
     arcpy.env.overwriteOutput = True
     cuber.set_messenger(arcpy.AddMessage)
-
-    class ArcProgressBar(Callback):
-        def _posttask(self, key, result, dsk, state, worker_id):
-            if key[0].startswith('block-') and 'gdal_reader_func' in key[0]:
-                arcpy.SetProgressorPosition()
+    arc_progress_bar = ui.make_progress_bar()
 
     time.sleep(1)
 
@@ -57,10 +52,6 @@ def execute(parameters):
 
     out_epsg = ui.extract_epsg_code(out_srs)
     out_bbox = shared.reproject_bbox(in_bbox, in_epsg, out_epsg)
-
-    # TODO: renable once projectas working
-    #ext = ext.projectAs(arcpy.SpatialReference(out_epsg))
-    #out_bbox = (ext.XMin, ext.YMin, ext.XMax, ext.YMax)
 
     if out_epsg == 4326:
         out_res *= 9.466833186042272E-06
@@ -80,7 +71,8 @@ def execute(parameters):
             out_epsg=out_epsg,
             out_res=out_res,
             remove_slc_off=remove_slc_off,
-            ignore_errors=True  # TODO: add to ui
+            ignore_errors=True,  # TODO: add to ui
+            full_query=False  # slc-7 off does not require full metadata
         )
 
     except Exception as e:
@@ -88,7 +80,7 @@ def execute(parameters):
         arcpy.AddMessage(str(e))
         return
 
-    if 'time' not in ds.dims or len(ds['time']) == 0:
+    if ds is None or 'time' not in ds.dims:
         arcpy.AddWarning('No STAC features were found.')
         return
 
@@ -99,11 +91,10 @@ def execute(parameters):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region DOWNLOAD WCS VALID DATA
 
-    n_dls = shared.count_xr_chunked(ds)
-    arcpy.SetProgressor('step', 'Downloading valid data...', 0, n_dls, 1)
+    arcpy.SetProgressor('step', 'Downloading valid data...', 0, 100, 1)
 
     try:
-        with ArcProgressBar():
+        with arc_progress_bar:
             ds.load(num_workers=max_threads)
 
     except Exception as e:

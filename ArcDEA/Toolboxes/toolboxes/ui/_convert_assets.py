@@ -44,6 +44,14 @@ def convert_assets(collection: str, vt) -> list:
             'Count':  'count'
         }
 
+    elif collection == 'ga_ls_fc_3':
+        assets_map = {
+            'Bare':             'bs',
+            'Green Vegetation': 'pv',
+            'Dead Vegetation':  'npv',
+            'Unmixing Error':   'ue'
+        }
+
     else:
         raise ValueError('Invalid collection name.')
 

@@ -15,6 +15,9 @@
     <Page Remove="Toolboxes\toolboxes\tests\**" />
   </ItemGroup>
   <ItemGroup>
+    <None Remove="Images\convert_icon_32.png" />
+    <None Remove="Images\ls_base_icon_32.png" />
+    <None Remove="Images\ls_derive_icon_32.png" />
     <None Remove="Toolboxes\arcpy\ArcDEA.py" />
     <None Remove="Toolboxes\help\gp\ArcDEA_toolbox.xml" />
     <None Remove="Toolboxes\help\gp\FetchLandsatBaselineData_ArcDEA.xml" />
@@ -33,14 +36,20 @@
     <None Remove="Toolboxes\toolboxes\ArcDEA.RemoveOutliers.pyt.xml" />
     <None Remove="Toolboxes\toolboxes\ArcDEA.ResampleData.pyt.xml" />
     <None Remove="Toolboxes\toolboxes\ArcDEA.Testing.pyt.xml" />
+    <None Remove="Toolboxes\toolboxes\cuber\aggregators\_resample_time.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\aggregators\__init__.py" />
     <None Remove="Toolboxes\toolboxes\cuber\converters\_xr_to_raster.py" />
     <None Remove="Toolboxes\toolboxes\cuber\converters\__init__.py" />
     <None Remove="Toolboxes\toolboxes\cuber\core\_core.py" />
     <None Remove="Toolboxes\toolboxes\cuber\core\__init__.py" />
     <None Remove="Toolboxes\toolboxes\cuber\indices\_indices.py" />
     <None Remove="Toolboxes\toolboxes\cuber\indices\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\outliers\_hampel_filter.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\outliers\_spike_filter.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\outliers\_zscore_filter.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\outliers\__init__.py" />
     <None Remove="Toolboxes\toolboxes\cuber\shared\_append_xr_attrs.py" />
-    <None Remove="Toolboxes\toolboxes\cuber\shared\_count_xr_chunked.py" />
+    <None Remove="Toolboxes\toolboxes\cuber\shared\_clamp_nodata.py" />
     <None Remove="Toolboxes\toolboxes\cuber\shared\_elevate_xr_dtypes.py" />
     <None Remove="Toolboxes\toolboxes\cuber\shared\_elevate_xr_nodata.py" />
     <None Remove="Toolboxes\toolboxes\cuber\shared\_extract_band_info.py" />
@@ -50,16 +59,22 @@
     <None Remove="Toolboxes\toolboxes\cuber\shared\_set_xr_nodata_to_nan.py" />
     <None Remove="Toolboxes\toolboxes\cuber\shared\__init__.py" />
     <None Remove="Toolboxes\toolboxes\cuber\__init__.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\aggregate_resample_time.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\convert_netcdf_to_rasters.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_baseline.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_derive_fraction_cover.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_derive_mangrove.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers_hampel.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers_spike.py" />
+    <None Remove="Toolboxes\toolboxes\geoprocessors\remove_outliers_zscore.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <None Remove="Toolboxes\toolboxes\geoprocessors\testing.py" />
     <None Remove="Toolboxes\toolboxes\scripts\constants.py" />
@@ -76,6 +91,7 @@
     <None Remove="Toolboxes\toolboxes\ui\_convert_mask_flags.py" />
     <None Remove="Toolboxes\toolboxes\ui\_extract_epsg_code.py" />
     <None Remove="Toolboxes\toolboxes\ui\_extract_xr_collection.py" />
+    <None Remove="Toolboxes\toolboxes\ui\_make_progress_bar.py" />
     <None Remove="Toolboxes\toolboxes\ui\_print_dates.py" />
     <None Remove="Toolboxes\toolboxes\ui\__init__.py" />
   </ItemGroup>
@@ -103,14 +119,20 @@
     <Content Include="Toolboxes\toolboxes\ArcDEA.RemoveOutliers.pyt.xml" />
     <Content Include="Toolboxes\toolboxes\ArcDEA.ResampleData.pyt.xml" />
     <Content Include="Toolboxes\toolboxes\ArcDEA.Testing.pyt.xml" />
+    <Content Include="Toolboxes\toolboxes\cuber\aggregators\_resample_time.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\aggregators\__init__.py" />
     <Content Include="Toolboxes\toolboxes\cuber\converters\_xr_to_raster.py" />
     <Content Include="Toolboxes\toolboxes\cuber\converters\__init__.py" />
     <Content Include="Toolboxes\toolboxes\cuber\core\_core.py" />
     <Content Include="Toolboxes\toolboxes\cuber\core\__init__.py" />
     <Content Include="Toolboxes\toolboxes\cuber\indices\_indices.py" />
     <Content Include="Toolboxes\toolboxes\cuber\indices\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\outliers\_hampel_filter.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\outliers\_spike_filter.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\outliers\_zscore_filter.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\outliers\__init__.py" />
     <Content Include="Toolboxes\toolboxes\cuber\shared\_append_xr_attrs.py" />
-    <Content Include="Toolboxes\toolboxes\cuber\shared\_count_xr_chunked.py" />
+    <Content Include="Toolboxes\toolboxes\cuber\shared\_clamp_nodata.py" />
     <Content Include="Toolboxes\toolboxes\cuber\shared\_elevate_xr_dtypes.py" />
     <Content Include="Toolboxes\toolboxes\cuber\shared\_elevate_xr_nodata.py" />
     <Content Include="Toolboxes\toolboxes\cuber\shared\_extract_band_info.py" />
@@ -120,15 +142,21 @@
     <Content Include="Toolboxes\toolboxes\cuber\shared\_set_xr_nodata_to_nan.py" />
     <Content Include="Toolboxes\toolboxes\cuber\shared\__init__.py" />
     <Content Include="Toolboxes\toolboxes\cuber\__init__.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\aggregate_resample_time.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\calculate_indices.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_crf.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_gdb.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\convert_nc_to_rasters.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_baseline.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_derive_fraction_cover.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_derive_mangrove.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_landsat_geomed.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\fetch_sentinel2_baseline.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\group_data.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers_hampel.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers_spike.py" />
+    <Content Include="Toolboxes\toolboxes\geoprocessors\remove_outliers_zscore.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\resample_data.py" />
     <Content Include="Toolboxes\toolboxes\geoprocessors\testing.py" />
     <Content Include="Toolboxes\toolboxes\scripts\constants.py" />
@@ -145,6 +173,7 @@
     <Content Include="Toolboxes\toolboxes\ui\_convert_mask_flags.py" />
     <Content Include="Toolboxes\toolboxes\ui\_extract_epsg_code.py" />
     <Content Include="Toolboxes\toolboxes\ui\_extract_xr_collection.py" />
+    <Content Include="Toolboxes\toolboxes\ui\_make_progress_bar.py" />
     <Content Include="Toolboxes\toolboxes\ui\_print_dates.py" />
     <Content Include="Toolboxes\toolboxes\ui\__init__.py" />
   </ItemGroup>
@@ -219,6 +248,14 @@
       <CopyLocal>False</CopyLocal>
       <Private>False</Private>
     </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\convert_icon_32.png" />
+    <Resource Include="Images\ls_base_icon_32.png">
+      <CopyToOutputDirectory></CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Images\ls_derive_icon_32.png" />
+    <Resource Include="Images\settings_icon_32.png" />
   </ItemGroup>
   <Import Project="C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets" Condition="Exists('C:\Program Files\ArcGIS\Pro\bin\Esri.ProApp.SDK.Desktop.targets') AND !Exists('Esri.ArcGISPro.Extensions.targets')" />
 </Project>

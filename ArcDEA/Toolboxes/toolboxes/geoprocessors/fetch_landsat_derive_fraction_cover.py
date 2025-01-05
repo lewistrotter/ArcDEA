@@ -5,6 +5,7 @@ def execute(parameters):
     # region IMPORTS
 
     import time
+    import xarray as xr
     import arcpy
     import cuber
     import ui
@@ -20,17 +21,16 @@ def execute(parameters):
     out_nc = parameters[1].valueAsText
     start_date = parameters[2].value
     end_date = parameters[3].value
-    collections = parameters[4].value
-    assets = parameters[5].value
-    quality_flags = parameters[6].value
-    remove_slc_off = parameters[7].value
-    remove_mask = parameters[8].value
-    max_empty = parameters[9].value
-    max_invalid = parameters[10].value
-    out_nodata = parameters[11].value
-    out_srs = parameters[12].value
-    out_res = parameters[13].value
-    max_threads = parameters[14].value
+    assets = parameters[4].value
+    quality_flags = parameters[5].value
+    remove_slc_off = parameters[6].value
+    remove_mask = parameters[7].value
+    max_empty = parameters[8].value
+    max_invalid = parameters[9].value
+    out_nodata = parameters[10].value
+    out_srs = parameters[11].value
+    out_res = parameters[12].value
+    max_threads = parameters[13].value
 
     # endregion
 
@@ -48,7 +48,7 @@ def execute(parameters):
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # region QUERY STAC ENDPOINT
+    # region QUERY STAC ENDPOINT FOR FRACTIONAL COVER DATA
 
     arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
 
@@ -64,22 +64,20 @@ def execute(parameters):
     start_date = start_date.strftime('%Y-%m-%d')
     end_date = end_date.strftime('%Y-%m-%d')
 
-    collections = ui.convert_collections('ga_ls_ard_3', collections)
-    assets = ui.convert_assets('ga_ls_ard_3', assets)
-
-    mask_asset = 'oa_fmask'  # landsat only supports fmask
-    assets += [mask_asset]
+    collection = 'ga_ls_fc_3'
+    assets = ui.convert_assets('ga_ls_fc_3', assets)
 
     try:
         ds = cuber.fetch(
-            collections=collections,
+            collections=collection,
             assets=assets,
             date=(start_date, end_date),
             out_bbox=out_bbox,
             out_epsg=out_epsg,
             out_res=out_res,
             remove_slc_off=remove_slc_off,
-            ignore_errors=True  # TODO: add to ui
+            ignore_errors=True,  # TODO: add to ui
+            full_query=True  # slc-7 off requires full metadata
         )
 
     except Exception as e:
@@ -96,15 +94,74 @@ def execute(parameters):
     # endregion
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region QUERY STAC ENDPOINT FOR MASK DATA
+
+    arcpy.SetProgressor('default', 'Querying DEA STAC endpoint...')
+
+    # note: this will have to change if baseline ever updated
+    mask_collections = [
+        'ga_ls5t_ard_3',
+        'ga_ls7e_ard_3',
+        'ga_ls8c_ard_3',
+        'ga_ls9c_ard_3'
+    ]
+
+    mask_asset = 'oa_fmask'
+
+    try:
+        ds_mask = cuber.fetch(
+            collections=mask_collections,
+            assets=mask_asset,
+            date=(start_date, end_date),
+            out_bbox=out_bbox,
+            out_epsg=out_epsg,
+            out_res=out_res,
+            remove_slc_off=remove_slc_off,
+            ignore_errors=True,  # TODO: add to ui
+            full_query=False  # slc-7 off requires full metadata
+        )
+
+    except Exception as e:
+        arcpy.AddError('Error occurred during DEA STAC query. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    if ds_mask is None or 'time' not in ds_mask.dims:
+        arcpy.AddWarning('No STAC features were found.')
+        return
+
+    time.sleep(1)
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region REMOVE DUPLICATE DATES
 
     arcpy.SetProgressor('default', 'Removing duplicate dates...')
 
     try:
         ds = cuber.drop_duped_dates(ds)
+        ds_mask = cuber.drop_duped_dates(ds_mask)
 
     except Exception as e:
         arcpy.AddError('Error occurred while removing duplicate dates. See messages.')
+        arcpy.AddMessage(str(e))
+        return
+
+    time.sleep(1)
+
+    # endregion
+
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # region MERGING DATASETS
+
+    arcpy.SetProgressor('default', 'Merging data...')
+
+    try:
+        ds = xr.merge([ds, ds_mask], join='left', fill_value=0)
+
+    except Exception as e:
+        arcpy.AddError('Error occurred while merging data. See messages.')
         arcpy.AddMessage(str(e))
         return
 
@@ -132,7 +189,7 @@ def execute(parameters):
 
     # endregion
 
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region APPLY WCS MASK DATA
 
     arcpy.SetProgressor('default', 'Applying mask data...')
@@ -258,70 +315,63 @@ def _make_test_params():
                           parameterType='Required',
                           direction='Input')
 
-    p04 = arcpy.Parameter(name='in_collections',
+    p04 = arcpy.Parameter(name='in_assets',
                           datatype='GPString',
                           parameterType='Required',
                           direction='Input',
                           multiValue=True)
     p04.filter.type = 'ValueList'
 
-    p05 = arcpy.Parameter(name='in_assets',
+    p05 = arcpy.Parameter(name='in_quality_flags',
                           datatype='GPString',
                           parameterType='Required',
                           direction='Input',
                           multiValue=True)
     p05.filter.type = 'ValueList'
 
-    p06 = arcpy.Parameter(name='in_quality_flags',
-                          datatype='GPString',
-                          parameterType='Required',
-                          direction='Input',
-                          multiValue=True)
-    p06.filter.type = 'ValueList'
-
-    p07 = arcpy.Parameter(name='in_remove_slc_off',
+    p06 = arcpy.Parameter(name='in_remove_slc_off',
                           datatype='GPBoolean',
                           parameterType='Required',
                           direction='Input')
 
-    p08 = arcpy.Parameter(name='in_remove_mask',
+    p07 = arcpy.Parameter(name='in_remove_mask',
                           datatype='GPBoolean',
                           parameterType='Required',
                           direction='Input')
 
-    p09 = arcpy.Parameter(name='in_max_empty',
+    p08 = arcpy.Parameter(name='in_max_empty',
+                          datatype='GPLong',
+                          parameterType='Required',
+                          direction='Input')
+    p08.filter.type = 'Range'
+
+    p09 = arcpy.Parameter(name='in_max_invalid',
                           datatype='GPLong',
                           parameterType='Required',
                           direction='Input')
     p09.filter.type = 'Range'
 
-    p10 = arcpy.Parameter(name='in_max_invalid',
-                          datatype='GPLong',
-                          parameterType='Required',
-                          direction='Input')
-    p10.filter.type = 'Range'
-
-    p11 = arcpy.Parameter(name='in_nodata_value',
+    p10 = arcpy.Parameter(name='in_nodata_value',
                           datatype='GPLong',
                           parameterType='Required',
                           direction='Input')
 
-    p12 = arcpy.Parameter(name='in_srs',
+    p11 = arcpy.Parameter(name='in_srs',
                           datatype='GPString',
                           parameterType='Required',
                           direction='Input')
-    p12.filter.type = 'ValueList'
+    p11.filter.type = 'ValueList'
 
-    p13 = arcpy.Parameter(name='in_res',
+    p12 = arcpy.Parameter(name='in_res',
                           datatype='GPDouble',
                           parameterType='Required',
                           direction='Input')
 
-    p14 = arcpy.Parameter(name='in_max_threads',
+    p13 = arcpy.Parameter(name='in_max_threads',
                           datatype='GPLong',
                           parameterType='Optional',
                           direction='Input')
-    p14.filter.type = 'Range'
+    p13.filter.type = 'Range'
 
     bbox = (-1516346, -3589160, -1514698, -3586324)
     srs = arcpy.SpatialReference(3577)
@@ -330,19 +380,18 @@ def _make_test_params():
     p01.value = r'C:\Users\Lewis\Desktop\arcdea\ls.nc'
     p02.value = '2020-01-01'
     p03.value = '2023-12-31'
-    p04.value = ['Landsat 8 OLI', 'Landsat 9 OLI-2']
-    p05.value = ['Blue', 'Green', 'Red', 'NIR']
-    p06.value = ['Valid', 'Snow', 'Shadow', 'Water']
+    p04.value = ['Bare', 'Green Vegetation', 'Dead Vegetation', 'Unmixing Error']
+    p05.value = ['Valid', 'Snow', 'Shadow', 'Water']
+    p06.value = True
     p07.value = True
-    p08.value = True
-    p09.value = 10
-    p10.value = 5
-    p11.value = -999
-    p12.value = 'GDA94 Australia Albers (EPSG: 3577)'
-    p13.value = 30
-    p14.value = None
+    p08.value = 10
+    p09.value = 5
+    p10.value = 255
+    p11.value = 'GDA94 Australia Albers (EPSG: 3577)'
+    p12.value = 30
+    p13.value = None
 
-    params = [p00, p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12, p13, p14]
+    params = [p00, p01, p02, p03, p04, p05, p06, p07, p08, p09, p10, p11, p12, p13]
 
     return params
 

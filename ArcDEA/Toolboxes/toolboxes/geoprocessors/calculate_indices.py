@@ -11,7 +11,6 @@ def execute(parameters):
 
     from cuber import shared
     from cuber import indices
-    from dask.callbacks import Callback
 
     # endregion
 
@@ -31,10 +30,7 @@ def execute(parameters):
     arcpy.SetProgressor('default', 'Preparing environment...')
 
     arcpy.env.overwriteOutput = True
-
-    class ArcProgressBar(Callback):
-        def _posttask(self, key, result, dsk, state, worker_id):
-            arcpy.SetProgressorPosition()
+    arc_progress_bar = ui.make_progress_bar()
 
     time.sleep(1)
 
@@ -86,8 +82,7 @@ def execute(parameters):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # region COMPUTE INDEX
 
-    n_dls = len(ds['time'])  # only computing once per date
-    arcpy.SetProgressor('step', 'Computing index...', 0, n_dls, 1)
+    arcpy.SetProgressor('step', 'Computing index...', 0, 100, 1)
 
     index_name = index_name.split(':')[0].lower()  # remove ui label
 
@@ -101,7 +96,7 @@ def execute(parameters):
                                   rescale=True,
                                   drop_bands=True)
 
-        with ArcProgressBar():
+        with arc_progress_bar:
             ds.load()
 
     except Exception as e:
