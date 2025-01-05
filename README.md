@@ -10,7 +10,7 @@ ArcDEA is the unofficial Digital Earth Australia (DEA) ArcGIS Pro plugin. It was
 * accompanying ArcGIS toolbox that is fully compatible with ArcGIS Pro model builder.
 
 ## Visual Overview
-<img src="ArcDEA/Screenshots/overview 05.png" height="450" />
+<img src="ArcDEA/Screenshots/overview 05.png"  />
 
 ## Requirements
 * ArcGIS Pro version 3.4 or above.
